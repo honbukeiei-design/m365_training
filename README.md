@@ -1,104 +1,43 @@
-# M365 Training Lab
+# M365 Training UI Simulator
 
-買い切り型OfficeからMicrosoft 365へ移行する職員向けの、Streamlit製トレーニングアプリです。
-Word / Excel / Teams / OneDrive / SharePoint / Copilot を、実際の操作に近い疑似UIで練習できます。
+Microsoft 365 移行研修向けの Streamlit アプリです。Word / Excel / Teams / OneDrive / SharePoint / Copilot の操作を、実画面に近い疑似UIで体験できます。
 
-> このプロジェクトは研修用シミュレーターです。Microsoft公式製品ではなく、Microsoftによる承認・提携を示すものではありません。
+## 今回の版の特徴
 
-## 特徴
+- Word のリボンタブが展開され、各機能が文書画面に反映されます。
+  - ホーム / 挿入 / レイアウト / デザイン / 校閲 / 表示 / 差し込み文書
+  - 太字 / 下線 / 箇条書き / スタイル / コメント / 共有
+- Word は入力欄と表示欄を分けず、白紙ページ上で直接編集します。
+- Excel はセルを直接編集でき、セル書式、合計、行挿入、グラフ、保護、表示倍率を体験できます。
+- 操作完了後に、実際の Microsoft 365 サービスURLを表示します。
+- 画面全体を Microsoft 365 風のタイトルバー、リボン、作業領域、ステータスバーで構成しています。
 
-- Microsoft 365風の疑似UI
-- ライセンス別の機能制限表示
-- Word / Excel / Teams / OneDrive / SharePoint / Copilot のページ分割
-- 進捗トラッキング
-- Copilot風の研修用AI支援
-- `OPENAI_API_KEY` 未設定時はモック応答で動作
-- GitHub公開しやすいREADME / LICENSE / .gitignore付き
-
-## 画面構成
-
-```text
-m365-training-app/
-├── app.py
-├── requirements.txt
-├── README.md
-├── LICENSE
-├── .gitignore
-├── .env.example
-├── modules/
-│   ├── copilot.py
-│   ├── license.py
-│   ├── state.py
-│   ├── tutorial.py
-│   └── ui.py
-├── pages/
-│   ├── 1_Word.py
-│   ├── 2_Excel.py
-│   ├── 3_Teams.py
-│   ├── 4_OneDrive.py
-│   ├── 5_SharePoint.py
-│   └── 6_Copilot.py
-├── assets/
-│   └── style.css
-└── data/
-    └── scenarios.json
-```
-
-## セットアップ
+## 実行方法
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Copilot風AI応答を有効化する場合
+## Streamlit Community Cloud で公開する場合
 
-`.env.example` を参考に環境変数を設定してください。
+1. GitHub にこのフォルダの中身をアップロードします。
+2. Streamlit Community Cloud にログインします。
+3. New app を選択します。
+4. Repository に `honbukeiei-design/m365_training` を指定します。
+5. Branch は `main`、Main file path は `app.py` を指定します。
+6. Deploy を押します。
 
-```bash
-export OPENAI_API_KEY="your-api-key"
-export OPENAI_MODEL="gpt-4o-mini"
-streamlit run app.py
+公開URLは、Streamlit側で設定したアプリ名に応じて次の形式になります。
+
+```text
+https://設定したアプリ名.streamlit.app/
 ```
 
-APIキーを設定しない場合でも、モック応答でアプリは動作します。
+## APIキーについて
 
-## 研修での使い方
+Copilot画面は `OPENAI_API_KEY` が未設定でもデモ応答で動作します。実AI連携を行う場合のみ、Streamlit Cloud の Secrets またはローカル環境変数に `OPENAI_API_KEY` を設定してください。
 
-1. サイドバーで想定ライセンスと受講者ロールを選択します。
-2. 各ページで操作を疑似体験します。
-3. 操作ガイドに沿って課題を完了します。
-4. 進捗バーで学習状況を確認します。
+## 注意
 
-## 実運用に向けた拡張案
-
-- 受講者ログイン
-- SQLite / PostgreSQL による進捗保存
-- 部署別シナリオ
-- 管理者向けダッシュボード
-- SCORM / LMS連携
-- Microsoft Graph API連携
-- アクセシビリティチェック
-
-## GitHub公開手順
-
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/YOUR_NAME/m365-training-app.git
-git push -u origin main
-```
-
-## 注意事項
-
-- UIは研修用の疑似再現であり、Microsoft 365の実画面と完全一致するものではありません。
-- ライセンス差分は研修用に単純化しています。実際の契約・機能差分は組織の契約内容を確認してください。
-- AI応答は下書き支援です。機密情報・個人情報の取り扱いには十分注意してください。
-
-## License
-
-MIT
+このアプリは研修用の疑似UIです。Microsoft 365 の公式UIを完全に複製するものではありません。商標・サービス名称は説明目的で使用しています。

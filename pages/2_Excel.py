@@ -1,55 +1,41 @@
+from pathlib import Path
 import streamlit as st
-import pandas as pd
-from modules.state import init_state, set_progress
-from modules.tutorial import show_steps
-from modules.ui import load_css, ribbon, task_card
+import streamlit.components.v1 as components
+from modules.training import page_header
 
 st.set_page_config(page_title="Excel Training", page_icon="📊", layout="wide")
-load_css(); init_state()
+st.markdown(f"<style>{Path('assets/style.css').read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
+page_header("📊", "Excel：表計算とリボン操作", "セルをクリックして入力し、ホーム・挿入・レイアウト・デザイン・校閲・表示の操作を体験します。")
 
-st.title("📊 Excel：表計算と共同編集")
-st.caption("セル、数式、簡単な集計、共同編集コメントを体験します。")
-ribbon("ホーム", ["ホーム", "挿入", "数式", "データ", "校閲", "表示", "自動化"])
-
-data = pd.DataFrame({
-    "部門": ["総務", "医事", "看護", "薬剤"],
-    "4月": [120, 180, 240, 90],
-    "5月": [135, 172, 260, 95],
-    "6月": [128, 190, 252, 105],
-})
-data["合計"] = data[["4月", "5月", "6月"]].sum(axis=1)
-
-a, b = st.columns([2, 1])
-with a:
-    st.markdown("### ワークシート")
-    html = "<table class='excel-grid'><tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th></tr>"
-    headers = ["部門", "4月", "5月", "6月", "合計"]
-    html += "<tr><th>1</th>" + "".join(f"<th>{h}</th>" for h in headers) + "</tr>"
-    for idx, row in data.iterrows():
-        html += f"<tr><th>{idx+2}</th>"
-        for col in headers:
-            cls = " class='cell-active'" if col == "合計" and idx == 0 else ""
-            html += f"<td{cls}>{row[col]}</td>"
-        html += "</tr>"
-    html += "</table>"
-    st.markdown(html, unsafe_allow_html=True)
-    st.caption("選択セル E2: =SUM(B2:D2)")
-with b:
-    st.markdown("### 演習")
-    total = int(data["合計"].sum())
-    answer = st.number_input("全体合計はいくらですか？", min_value=0, step=1)
-    if st.button("チェック", type="primary"):
-        if answer == total:
-            set_progress("Excel", 70)
-            st.success("正解です。各部門の3か月合計をさらに集計できています。")
-        else:
-            st.error(f"惜しいです。ヒント：合計列の合計は {total} です。")
-    comment = st.text_input("共同編集コメント", "6月の数値を確認してください")
-    task_card("課題1", "合計列の意味を確認する", True)
-    task_card("課題2", "コメント欄に確認依頼を書く", bool(comment))
-
-show_steps("Excel", [
-    "① 表の行・列・セル参照を確認します。",
-    "② 合計列は SUM 関数で月別数値を集計しています。",
-    "③ 共同編集ではコメントで確認依頼を残し、Teams通知と組み合わせます。",
-])
+excel_html = r'''
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><style>
+*{box-sizing:border-box}body{margin:0;font-family:"Segoe UI",system-ui,"Yu Gothic",sans-serif;background:#f3f2f1;color:#242424}.excel-shell{border:1px solid #c8c6c4;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 12px 30px rgba(0,0,0,.10)}.titlebar{height:42px;background:#107c41;color:white;display:flex;align-items:center;justify-content:space-between;padding:0 14px}.tabs{display:flex;background:white;border-bottom:1px solid #d0d0d0;padding:0 10px}.tab{border:0;background:transparent;padding:11px 16px 10px;cursor:pointer;font-weight:600;border-bottom:3px solid transparent}.tab.active{color:#107c41;border-bottom-color:#107c41}.tab:hover{background:#f3f2f1}.ribbon{background:#fdfdfd;border-bottom:1px solid #d0d0d0;min-height:104px;padding:10px 12px;display:flex;gap:10px}.group{border-right:1px solid #e1dfdd;padding:0 12px 20px 0;min-width:125px;position:relative;display:flex;gap:6px;flex-wrap:wrap}.group-label{position:absolute;bottom:0;left:0;right:12px;text-align:center;color:#605e5c;font-size:11px}.cmd{border:1px solid #d0d0d0;background:#fff;border-radius:5px;min-width:42px;height:38px;padding:4px 8px;cursor:pointer;font-weight:600}.cmd:hover{background:#e9f5ee;border-color:#79c49a}.cmd.big{width:72px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px}.fxbar{display:grid;grid-template-columns:78px 1fr;gap:8px;align-items:center;padding:8px 12px;background:#fbfbfb;border-bottom:1px solid #d0d0d0}.namebox,.formula{height:34px;border:1px solid #d0d0d0;background:white;border-radius:4px;padding:6px}.formula{width:100%}.sheet-wrap{height:620px;overflow:auto;background:#f8f8f8;padding:0}.grid{border-collapse:collapse;background:white}.grid th{background:#f3f2f1;border:1px solid #d0d0d0;height:28px;min-width:90px;font-weight:600;color:#605e5c}.grid td{border:1px solid #d0d0d0;min-width:110px;height:34px;padding:4px;outline:0}.grid td:focus{box-shadow:inset 0 0 0 2px #107c41;background:#fff}.grid td.bold{font-weight:700}.grid td.underline{text-decoration:underline}.grid td.fill{background:#dff6dd}.grid td.border{border:2px solid #107c41}.sheet-tabs{display:flex;gap:4px;align-items:center;background:#f3f2f1;border-top:1px solid #d0d0d0;padding:8px 12px}.sheet-tab{background:white;border:1px solid #d0d0d0;border-radius:999px;padding:6px 12px}.sheet-tab.active{border-color:#107c41;color:#107c41;font-weight:700}.toast{position:fixed;right:24px;bottom:24px;background:#323130;color:#fff;padding:12px 16px;border-radius:8px;opacity:0;transform:translateY(10px);transition:.25s}.toast.show{opacity:1;transform:translateY(0)}.real-use{display:none;background:#e9f5ee;border:1px solid #9fd89f;padding:12px;margin-left:auto;border-radius:10px}.real-use.show{display:block}.real-use a{color:#107c41;font-weight:700;text-decoration:none}
+</style></head><body><div class="excel-shell"><div class="titlebar"><b>📊 Excel　売上集計.xlsx</b><span id="state">未保存</span></div><div class="tabs"><button class="tab active" data-tab="home">ホーム</button><button class="tab" data-tab="insert">挿入</button><button class="tab" data-tab="layout">レイアウト</button><button class="tab" data-tab="design">デザイン</button><button class="tab" data-tab="review">校閲</button><button class="tab" data-tab="view">表示</button><button class="tab" data-tab="mail">差し込み文書</button></div><div class="ribbon" id="ribbon"></div><div class="fxbar"><div class="namebox" id="namebox">A1</div><input class="formula" id="formula" value="" onkeydown="if(event.key==='Enter')applyFormula()"></div><div class="sheet-wrap"><table class="grid" id="grid"></table></div><div class="sheet-tabs"><span class="sheet-tab active">売上</span><span class="sheet-tab">研修用</span><button class="cmd" onclick="addSheet()">＋</button><div id="realUse" class="real-use"><b>実際に使用してみよう：</b> <a target="_blank" href="https://www.microsoft365.com/launch/excel">Excel Onlineを開く</a></div></div></div><div class="toast" id="toast"></div>
+<script>
+const rows=18, cols=8, letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');let selected=null;const grid=document.getElementById('grid'), formula=document.getElementById('formula'), namebox=document.getElementById('namebox'), toast=document.getElementById('toast');
+function build(){let h='<tr><th></th>';for(let c=0;c<cols;c++)h+='<th>'+letters[c]+'</th>';h+='</tr>';for(let r=1;r<=rows;r++){h+='<tr><th>'+r+'</th>';for(let c=0;c<cols;c++){let val='';if(r===1&&c===0)val='部署';if(r===1&&c===1)val='4月';if(r===1&&c===2)val='5月';if(r===1&&c===3)val='合計';if(r===2&&c===0)val='総務';if(r===3&&c===0)val='医事';if(r===4&&c===0)val='情報';if(r===2&&c===1)val='120';if(r===2&&c===2)val='145';if(r===3&&c===1)val='90';if(r===3&&c===2)val='110';if(r===4&&c===1)val='180';if(r===4&&c===2)val='210';h+='<td contenteditable="true" data-r="'+r+'" data-c="'+c+'">'+val+'</td>'}h+='</tr>'}grid.innerHTML=h;grid.querySelectorAll('td').forEach(td=>{td.addEventListener('focus',()=>select(td));td.addEventListener('input',()=>{formula.value=td.innerText;state('未保存')})})}
+function select(td){selected=td;namebox.textContent=letters[+td.dataset.c]+td.dataset.r;formula.value=td.innerText}
+function applyFormula(){if(!selected)return;selected.innerText=formula.value;note('数式バーの内容をセルに反映しました')}
+function note(t){toast.textContent=t;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1400);state('未保存')}
+function state(s){document.getElementById('state').textContent=s}
+function save(){state('OneDriveに保存済み');document.getElementById('realUse').classList.add('show');note('OneDriveに保存しました')}
+function cls(c){if(selected){selected.classList.toggle(c);note('セルの書式を変更しました')}}
+function sumRow(){if(!selected)return;let r=+selected.dataset.r;let a=Number(cell(r,1).innerText)||0,b=Number(cell(r,2).innerText)||0;selected.innerText=a+b;formula.value='=SUM(B'+r+':C'+r+')';note('合計を計算しました')}
+function cell(r,c){return grid.querySelector('td[data-r="'+r+'"][data-c="'+c+'"]')}
+function insertRow(){let r=selected?+selected.dataset.r:5;for(let c=0;c<cols;c++)cell(rows,c); let row=grid.insertRow(r+1);let th=document.createElement('th');th.textContent='新';row.appendChild(th);for(let c=0;c<cols;c++){let td=document.createElement('td');td.contentEditable=true;td.dataset.r='new';td.dataset.c=c;td.addEventListener('focus',()=>select(td));row.appendChild(td)}note('行を挿入しました')}
+function addChart(){let box=document.createElement('div');box.style.cssText='position:absolute;left:820px;top:250px;background:white;border:1px solid #d0d0d0;border-radius:10px;padding:14px;box-shadow:0 8px 18px rgba(0,0,0,.16);width:240px';box.innerHTML='<b>売上グラフ</b><div style="display:flex;align-items:end;gap:10px;height:110px;margin-top:12px"><span style="height:55px;background:#107c41;width:38px"></span><span style="height:78px;background:#107c41;width:38px"></span><span style="height:98px;background:#107c41;width:38px"></span></div>';document.body.appendChild(box);note('グラフを挿入しました')}
+function protect(){grid.querySelectorAll('td').forEach(td=>td.contentEditable=false);note('シート保護をオンにしました')}
+function unprotect(){grid.querySelectorAll('td').forEach(td=>td.contentEditable=true);note('シート保護を解除しました')}
+function setZoom(z){grid.style.zoom=z;note('表示倍率を変更しました')}
+function addSheet(){let s=document.createElement('span');s.className='sheet-tab';s.textContent='新しいシート';document.querySelector('.sheet-tabs').insertBefore(s,document.querySelector('.sheet-tabs button'));note('シートを追加しました')}
+function rHome(){ribbon.innerHTML='<div class="group"><button class="cmd" onclick="cls(\'bold\')"><b>B</b></button><button class="cmd" onclick="cls(\'underline\')"><u>U</u></button><button class="cmd" onclick="cls(\'fill\')">塗り</button><button class="cmd" onclick="cls(\'border\')">罫線</button><div class="group-label">フォント</div></div><div class="group"><button class="cmd big" onclick="sumRow()"><b>Σ</b>合計</button><button class="cmd big" onclick="save()"><b>💾</b>保存</button><div class="group-label">編集</div></div>'}
+function rInsert(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="insertRow()"><b>＋</b>行</button><button class="cmd big" onclick="addChart()"><b>📊</b>グラフ</button><div class="group-label">挿入</div></div>'}
+function rLayout(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="grid.style.fontSize=\'13px\';note(\'標準レイアウトにしました\')"><b>A</b>標準</button><button class="cmd big" onclick="grid.style.fontSize=\'16px\';note(\'大きめ表示にしました\')"><b>A+</b>大</button><div class="group-label">ページ設定</div></div>'}
+function rDesign(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="grid.querySelectorAll(\'tr:first-child th\').forEach(x=>x.style.background=\'#dff6dd\');note(\'表デザインを適用しました\')"><b>緑</b>表</button><button class="cmd big" onclick="grid.querySelectorAll(\'td\').forEach(x=>x.classList.add(\'border\'));note(\'罫線を適用しました\')"><b>□</b>罫線</button><div class="group-label">表スタイル</div></div>'}
+function rReview(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="protect()"><b>🔒</b>保護</button><button class="cmd big" onclick="unprotect()"><b>🔓</b>解除</button><div class="group-label">校閲</div></div>'}
+function rView(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="setZoom(0.85)"><b>85%</b>縮小</button><button class="cmd big" onclick="setZoom(1)"><b>100%</b>標準</button><button class="cmd big" onclick="setZoom(1.2)"><b>120%</b>拡大</button><div class="group-label">表示</div></div>'}
+function rMail(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="if(selected){selected.innerText=\'«氏名»\';note(\'差し込み項目を入力しました\')}"><b>«»</b>項目</button><button class="cmd big" onclick="document.getElementById(\'realUse\').classList.add(\'show\');note(\'差し込み文書の練習を完了しました\')"><b>✓</b>完了</button><div class="group-label">差し込み</div></div>'}
+const maps={home:rHome,insert:rInsert,layout:rLayout,design:rDesign,review:rReview,view:rView,mail:rMail};document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');maps[b.dataset.tab]();note('「'+b.textContent+'」タブを表示しました')}));build();rHome();select(cell(1,0));
+</script></body></html>
+'''
+components.html(excel_html, height=900, scrolling=True)

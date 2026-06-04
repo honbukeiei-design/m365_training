@@ -1,83 +1,40 @@
+from pathlib import Path
 import streamlit as st
-from modules.license import get_license_profile, LICENSE_FEATURES
-from modules.state import init_state
-from modules.ui import load_css, card
 
-st.set_page_config(
-    page_title="M365 Training Lab",
-    page_icon="📘",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-load_css()
-init_state()
+st.set_page_config(page_title="M365 Training UI", page_icon="🧩", layout="wide")
+css = Path("assets/style.css").read_text(encoding="utf-8")
+st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
-st.sidebar.title("M365 Training Lab")
-st.sidebar.caption("買い切り型OfficeからMicrosoft 365へ移行する職員向け教材")
-st.sidebar.selectbox(
-    "想定ライセンス",
-    list(LICENSE_FEATURES.keys()),
-    key="license",
-)
-st.sidebar.selectbox(
-    "受講者ロール",
-    ["一般職員", "管理者", "部門リーダー"],
-    key="role",
-)
+st.sidebar.title("M365 Training")
+st.sidebar.caption("疑似UIで操作を練習し、最後に実サービスへ移動します。")
+license_type = st.sidebar.selectbox("ライセンス想定", ["Microsoft 365 F3", "Business Standard", "Microsoft 365 E3"], index=2)
+st.session_state["license_type"] = license_type
 st.sidebar.divider()
-st.sidebar.write("進捗")
-for area, value in st.session_state.progress.items():
-    st.sidebar.progress(value / 100, text=f"{area}: {value}%")
+st.sidebar.markdown("**操作対象**")
+st.sidebar.page_link("app.py", label="ホーム", icon="🏠")
+st.sidebar.page_link("pages/1_Word.py", label="Word", icon="📄")
+st.sidebar.page_link("pages/2_Excel.py", label="Excel", icon="📊")
+st.sidebar.page_link("pages/3_Teams.py", label="Teams", icon="💬")
+st.sidebar.page_link("pages/4_OneDrive.py", label="OneDrive", icon="☁️")
+st.sidebar.page_link("pages/5_SharePoint.py", label="SharePoint", icon="📁")
+st.sidebar.page_link("pages/6_Copilot.py", label="Copilot", icon="🤖")
 
-license_profile = get_license_profile(st.session_state.license)
+st.markdown("""
+<div class="page-heading">
+  <div class="app-icon">🧩</div>
+  <div>
+    <h1>Microsoft 365 研修シミュレーター</h1>
+    <p>Word / Excel / Teams / OneDrive / SharePoint / Copilot を、実際の画面に近い疑似UIで体験します。</p>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
-st.markdown(
-    f"""
-    <div class="m365-hero">
-      <h1>📘 Microsoft 365 移行トレーニング</h1>
-      <p>Word / Excel / Teams / OneDrive / SharePoint / Copilot の操作を、実際の業務画面に近い疑似UIで練習します。</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+c1, c2, c3 = st.columns(3)
+with c1:
+    st.markdown("""<div class="m365-card"><h3>1. 操作する</h3><p class="small-note">リボン、ツールバー、保存、共有などを押して画面変化を確認します。</p></div>""", unsafe_allow_html=True)
+with c2:
+    st.markdown("""<div class="m365-card"><h3>2. 結果を見る</h3><p class="small-note">文書、表、チャット、共有状態などがUI上に反映されます。</p></div>""", unsafe_allow_html=True)
+with c3:
+    st.markdown("""<div class="m365-card"><h3>3. 実際に使う</h3><p class="small-note">体験完了後、公式URLを開いて本番環境で同じ操作を試します。</p></div>""", unsafe_allow_html=True)
 
-st.write("")
-col1, col2, col3 = st.columns(3)
-with col1:
-    card("現在のライセンス", st.session_state.license, "選択中")
-with col2:
-    card("受講者ロール", st.session_state.role, "シナリオ分岐")
-with col3:
-    card("利用目的", "旧Office操作からクラウド共同編集・共有・会議連携へ移行", "研修")
-
-st.markdown("## 学習メニュー")
-menu = [
-    ("📄 Word", "文書作成、保存、共有、Copilot下書き支援"),
-    ("📊 Excel", "表計算、関数、集計、共同編集の基礎"),
-    ("💬 Teams", "チャット、チャネル、会議、ファイル連携"),
-    ("☁ OneDrive", "個人用ファイル、共有リンク、アクセス権"),
-    ("📁 SharePoint", "チームサイト、ドキュメントライブラリ、権限"),
-    ("🤖 Copilot", "研修用AI支援、要約、文面作成、指示の書き方"),
-]
-cols = st.columns(2)
-for i, (title, desc) in enumerate(menu):
-    with cols[i % 2]:
-        card(title, desc)
-
-st.markdown("## ライセンス別の体験差分")
-features = {
-    "デスクトップアプリ": "desktop",
-    "Web版Office": "web_office",
-    "OneDrive": "onedrive",
-    "SharePoint": "sharepoint",
-    "Teams基本機能": "teams_basic",
-    "高度なセキュリティ": "advanced_security",
-    "Copilot導入前提": "copilot_ready",
-}
-feature_rows = []
-for label, key in features.items():
-    feature_rows.append({"機能": label, "利用可否": "✅ 利用可" if license_profile.get(key) else "制限あり"})
-st.dataframe(feature_rows, use_container_width=True, hide_index=True)
-
-st.info("左側のページメニューから各アプリの演習画面を開いてください。")
-st.markdown("<div class='footer-note'>This project is a training simulator. It is not affiliated with or endorsed by Microsoft.</div>", unsafe_allow_html=True)
+st.info("左メニューから Word または Excel を開くと、リボン操作が展開・反映される研修画面を確認できます。")
