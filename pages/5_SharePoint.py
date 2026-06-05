@@ -1,41 +1,24 @@
-import html
 import streamlit as st
-from modules.ui import load_css, titlebar, app_header, close_shell, service_launcher, training_strip, ribbon_tabs, mark_task_done, reset_service
+from modules.ui import load_css, top_bar, page_title, training_bar, complete_task, reset, tabs, ribbon_start, ribbon_end
 SERVICE="SharePoint"
-TASKS=[{"id":"site","label":"サイトを選び、表示対象のドキュメント ライブラリを切り替えてください。"},{"id":"permission","label":"権限レベルを選び、サイト権限に反映してください。"},{"id":"news","label":"ニュース投稿の種類を選び、サイトに追加してください。"}]
-TABS=["ホーム","ドキュメント","ページ","ニュース","権限","サイトの設定"]
-st.set_page_config(page_title="SharePoint 体験",page_icon="📁",layout="wide")
-load_css(); titlebar(); service_launcher(SERVICE); training_strip(SERVICE,TASKS)
-st.session_state.setdefault("SharePoint_site","経営企画サイト")
-st.session_state.setdefault("SharePoint_permission","閲覧")
-st.session_state.setdefault("SharePoint_news",[])
-app_header("SharePoint","サイト、ドキュメント、ニュース、権限管理を選択肢付きで体験します。")
-active=ribbon_tabs(SERVICE,TABS)
-st.markdown("<div class='ribbon'>",unsafe_allow_html=True)
-if active=="ホーム":
-    site=st.selectbox("サイト",["経営企画サイト","情報システムサイト","M365移行プロジェクト"])
-    if st.button("サイトを表示",use_container_width=True):
-        st.session_state.SharePoint_site=site; mark_task_done(SERVICE,"site")
+TASKS=[{"id":"site","label":"サイトを選択してください。"},{"id":"doc","label":"ドキュメントライブラリにファイルを追加してください。"},{"id":"permission","label":"権限を設定してください。"},{"id":"news","label":"ニュースを投稿してください。"}]
+TABS=["サイト","ドキュメント","権限","ニュース"]
+st.set_page_config(page_title="SharePoint 体験",layout="wide"); load_css(); top_bar("SharePoint"); page_title("SharePoint","チームサイト、文書管理、権限、ニュース投稿を体験します。"); training_bar(SERVICE,TASKS)
+for k,v in {"SharePoint_site":"未選択","SharePoint_docs":["運用ルール.docx"],"SharePoint_perm":"閲覧のみ","SharePoint_news":""}.items(): st.session_state.setdefault(k,v)
+active=tabs(SERVICE,TABS); ribbon_start()
+if active=="サイト":
+    site=st.selectbox("サイト",["経営企画","情報システム","総務"])
+    if st.button("サイトを開く",use_container_width=True): st.session_state.SharePoint_site=site; complete_task(SERVICE,"site")
+elif active=="ドキュメント":
+    doc=st.text_input("追加ファイル","会議資料.docx")
+    if st.button("ライブラリに追加",use_container_width=True): st.session_state.SharePoint_docs.append(doc); complete_task(SERVICE,"doc")
 elif active=="権限":
-    level=st.radio("権限",["閲覧","投稿","編集","所有者"],horizontal=True)
-    if st.button("権限を適用",use_container_width=True):
-        st.session_state.SharePoint_permission=level; mark_task_done(SERVICE,"permission")
+    perm=st.radio("権限",["閲覧のみ","編集可","所有者"],horizontal=True)
+    if st.button("権限を適用",use_container_width=True): st.session_state.SharePoint_perm=perm; complete_task(SERVICE,"permission")
 elif active=="ニュース":
-    news=st.selectbox("ニュース種別",["移行のお知らせ","研修開催案内","FAQ更新"])
-    if st.button("ニュースを投稿",use_container_width=True):
-        if news not in st.session_state.SharePoint_news: st.session_state.SharePoint_news.append(news)
-        mark_task_done(SERVICE,"news")
-else:
-    st.caption("選択したサイトの内容を下に表示します。")
-st.markdown("</div>",unsafe_allow_html=True)
-st.markdown(f"<div class='site-card'><h3>{html.escape(st.session_state.SharePoint_site)}</h3><span class='badge'>権限：{html.escape(st.session_state.SharePoint_permission)}</span></div>",unsafe_allow_html=True)
-st.markdown("#### ドキュメント ライブラリ")
-rows="".join(f"<div class='file-row'><span>📄 {html.escape(f)}</span><span class='badge'>SharePoint</span><span>共有済み</span></div>" for f in ["議事録.docx","移行計画.xlsx","権限一覧.xlsx"])
-st.markdown(f"<div class='file-list'>{rows}</div>",unsafe_allow_html=True)
-if st.session_state.SharePoint_news:
-    st.markdown("#### ニュース")
-    for n in st.session_state.SharePoint_news:
-        st.markdown(f"<div class='share-panel'>📰 {html.escape(n)}</div>",unsafe_allow_html=True)
-if st.button("SharePointの体験をリセット"):
-    reset_service(SERVICE)
-close_shell()
+    news=st.text_input("ニュースタイトル","M365移行研修を開始します")
+    if st.button("投稿",use_container_width=True): st.session_state.SharePoint_news=news; complete_task(SERVICE,"news")
+ribbon_end()
+docs="".join(f"<div class='file-card'>{d}</div>" for d in st.session_state.SharePoint_docs)
+st.markdown(f"<div class='office-shell'><div class='office-titlebar'>SharePoint - {st.session_state.SharePoint_site}</div><div class='office-canvas'><div class='site-card'>権限：{st.session_state.SharePoint_perm}</div>{docs}<div class='site-card'>ニュース：{st.session_state.SharePoint_news or '未投稿'}</div></div></div>",unsafe_allow_html=True)
+if st.button("SharePointの体験をリセット"): reset(SERVICE)

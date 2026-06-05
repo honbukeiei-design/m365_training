@@ -1,41 +1,23 @@
-import html
 import streamlit as st
-from modules.ui import load_css, titlebar, app_header, close_shell, service_launcher, training_strip, ribbon_tabs, mark_task_done, reset_service
+from modules.ui import load_css, top_bar, page_title, training_bar, complete_task, reset, tabs, ribbon_start, ribbon_end
 SERVICE="OneDrive"
-TASKS=[{"id":"upload","label":"アップロードするファイル種類を選び、一覧に追加してください。"},{"id":"share","label":"共有方法を選び、共有リンク状態を反映してください。"},{"id":"sync","label":"同期対象を選び、同期状態を更新してください。"},{"id":"restore","label":"復元する版を選び、復元状態を表示してください。"}]
-TABS=["ホーム","アップロード","共有","同期","履歴","ごみ箱"]
-st.set_page_config(page_title="OneDrive 体験",page_icon="☁️",layout="wide")
-load_css(); titlebar(); service_launcher(SERVICE); training_strip(SERVICE,TASKS)
-st.session_state.setdefault("OneDrive_files", ["移行手順書.docx","研修日程.xlsx"])
-st.session_state.setdefault("OneDrive_share", "未共有")
-st.session_state.setdefault("OneDrive_sync", "未同期")
-st.session_state.setdefault("OneDrive_restore", "未実行")
-app_header("OneDrive","アップロード、共有、同期、復元を選択肢付きで体験します。")
-active=ribbon_tabs(SERVICE,TABS)
-st.markdown("<div class='ribbon'>",unsafe_allow_html=True)
-if active=="アップロード":
-    f=st.selectbox("アップロードするファイル",["会議資料.docx","予算表.xlsx","説明動画.mp4"])
-    if st.button("アップロード",use_container_width=True):
-        if f not in st.session_state.OneDrive_files: st.session_state.OneDrive_files.append(f)
-        mark_task_done(SERVICE,"upload")
+TASKS=[{"id":"upload","label":"ファイルをアップロードしてください。"},{"id":"share","label":"共有リンクを作成してください。"},{"id":"sync","label":"同期状態を確認してください。"},{"id":"restore","label":"バージョン履歴から復元してください。"}]
+TABS=["ホーム","自分のファイル","共有","同期","履歴"]
+st.set_page_config(page_title="OneDrive 体験",layout="wide"); load_css(); top_bar("OneDrive"); page_title("OneDrive","個人ファイルの保存、共有、同期、復元を体験します。"); training_bar(SERVICE,TASKS)
+for k,v in {"OneDrive_files":["保存ルール.docx","研修集計.xlsx"],"OneDrive_share":"未作成","OneDrive_sync":"未同期","OneDrive_restore":""}.items(): st.session_state.setdefault(k,v)
+active=tabs(SERVICE,TABS); ribbon_start()
+if active=="ホーム":
+    name=st.text_input("ファイル名","説明資料.pptx")
+    if st.button("アップロード",use_container_width=True): st.session_state.OneDrive_files.append(name); complete_task(SERVICE,"upload")
 elif active=="共有":
-    f=st.selectbox("共有対象",st.session_state.OneDrive_files)
-    method=st.radio("共有方法",["指定したユーザー","組織内リンク","閲覧のみリンク"],horizontal=True)
-    if st.button("共有リンクを作成",use_container_width=True):
-        st.session_state.OneDrive_share=f"{f}：{method}"; mark_task_done(SERVICE,"share")
+    scope=st.radio("リンク範囲",["指定したユーザー","組織内のユーザー","リンクを知っている全員"],horizontal=True)
+    if st.button("共有リンクを作成",use_container_width=True): st.session_state.OneDrive_share=scope; complete_task(SERVICE,"share")
 elif active=="同期":
-    target=st.radio("同期対象",["デスクトップ","ドキュメント","写真"],horizontal=True)
-    if st.button("同期を開始",use_container_width=True):
-        st.session_state.OneDrive_sync=f"{target} を同期中"; mark_task_done(SERVICE,"sync")
+    if st.button("同期を開始",use_container_width=True): st.session_state.OneDrive_sync="最新"; complete_task(SERVICE,"sync")
 elif active=="履歴":
-    version=st.selectbox("復元する版",["1時間前","昨日 17:30","先週金曜日"])
-    if st.button("この版を復元",use_container_width=True):
-        st.session_state.OneDrive_restore=f"{version} の版を復元"; mark_task_done(SERVICE,"restore")
-else:
-    st.caption("ファイル一覧から状態を確認できます。")
-st.markdown("</div>",unsafe_allow_html=True)
-rows="".join(f"<div class='file-row'><span>📄 {html.escape(f)}</span><span class='badge'>クラウド</span><span>最終更新 今日</span></div>" for f in st.session_state.OneDrive_files)
-st.markdown(f"<div class='file-list'>{rows}</div><div class='share-panel'>共有：{html.escape(st.session_state.OneDrive_share)}<br>同期：{html.escape(st.session_state.OneDrive_sync)}<br>復元：{html.escape(st.session_state.OneDrive_restore)}</div>",unsafe_allow_html=True)
-if st.button("OneDriveの体験をリセット"):
-    reset_service(SERVICE)
-close_shell()
+    ver=st.selectbox("復元するバージョン",["1時間前","昨日 17:30","先週 月曜"])
+    if st.button("復元",use_container_width=True): st.session_state.OneDrive_restore=ver; complete_task(SERVICE,"restore")
+ribbon_end()
+items="".join(f"<div class='file-card'><strong>{f}</strong><div class='small'>共有：{st.session_state.OneDrive_share} ／ 同期：{st.session_state.OneDrive_sync}</div></div>" for f in st.session_state.OneDrive_files)
+st.markdown(f"<div class='office-shell'><div class='office-titlebar'>OneDrive</div><div class='office-canvas'>{items}<div class='small'>復元：{st.session_state.OneDrive_restore or '未実行'}</div></div></div>",unsafe_allow_html=True)
+if st.button("OneDriveの体験をリセット"): reset(SERVICE)

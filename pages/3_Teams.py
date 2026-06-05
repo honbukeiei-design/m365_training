@@ -1,39 +1,52 @@
 import html
 import streamlit as st
-from modules.ui import load_css, titlebar, app_header, close_shell, service_launcher, training_strip, ribbon_tabs, mark_task_done, reset_service
+from modules.ui import load_css, top_bar, page_title, training_bar, complete_task, reset, tabs, ribbon_start, ribbon_end
+
 SERVICE="Teams"
-TASKS=[{"id":"chat","label":"チャットで宛先とメッセージを選び、送信してください。"},{"id":"share","label":"ファイルを選び、チャットに共有してください。"},{"id":"meeting","label":"会議の種類を選び、会議開始を反映してください。"}]
-TABS=["チャット","チーム","予定表","ファイル","アプリ"]
-st.set_page_config(page_title="Teams 体験",page_icon="💬",layout="wide")
-load_css(); titlebar(); service_launcher(SERVICE); training_strip(SERVICE,TASKS)
-st.session_state.setdefault("Teams_messages", ["佐藤: 会議資料を確認してください。", "田中: OneDriveに保存しました。"])
-st.session_state.setdefault("Teams_shared", "未共有")
-st.session_state.setdefault("Teams_meeting", "未開始")
-app_header("Teams","チャット、ファイル共有、会議開始を選択肢付きで体験します。")
-active=ribbon_tabs(SERVICE,TABS)
-st.markdown("<div class='ribbon'>",unsafe_allow_html=True)
+TASKS=[
+ {"id":"mention","label":"チャットで @メンション を付けて送信してください。"},
+ {"id":"file","label":"ファイルを添付し、チャットに共有してください。"},
+ {"id":"reaction","label":"メッセージにリアクションを付けてください。"},
+ {"id":"meeting","label":"会議タイトルを入力し、会議を開始してください。"},
+]
+TABS=["チャット","チーム","会議","ファイル","アクティビティ"]
+st.set_page_config(page_title="Teams 体験", layout="wide")
+load_css(); top_bar("Teams")
+page_title("Teams", "@メンション、返信、ファイル共有、会議開始の基本操作を体験します。")
+training_bar(SERVICE,TASKS)
+for k,v in {"Teams_messages":[("佐藤","会議資料を確認してください。",False)],"Teams_file":"","Teams_meeting":"","Teams_reaction":""}.items(): st.session_state.setdefault(k,v)
+active=tabs(SERVICE,TABS); ribbon_start()
 if active=="チャット":
-    to=st.selectbox("送信先",["佐藤さん","田中さん","M365移行チーム"])
-    msg=st.text_input("メッセージ",value="資料を共有しました。確認をお願いします。")
-    if st.button("送信",use_container_width=True):
-        st.session_state.Teams_messages.append(f"あなた → {to}: {msg}"); mark_task_done(SERVICE,"chat")
+    mention=st.selectbox("メンション先",["@佐藤","@田中","@情報システム担当"])
+    body=st.text_input("本文","確認しました。OneDriveに保存して共有します。")
+    if st.button("メンション付きで送信",use_container_width=True):
+        st.session_state.Teams_messages.append(("あなた",f"{mention} {body}",False)); complete_task(SERVICE,"mention")
+    if st.button("リアクションを付ける",use_container_width=True):
+        st.session_state.Teams_reaction="いいね"; complete_task(SERVICE,"reaction")
 elif active=="ファイル":
-    f=st.selectbox("共有するファイル",["移行手順書.docx","研修日程.xlsx","FAQ.pdf"])
+    fname=st.selectbox("共有するファイル",["M365移行手順.docx","研修参加者.xlsx","保存ルール.pdf"])
     if st.button("チャットに共有",use_container_width=True):
-        st.session_state.Teams_shared=f; st.session_state.Teams_messages.append(f"あなた: {f} を共有しました。論") if False else st.session_state.Teams_messages.append(f"あなた: {f} を共有しました。"); mark_task_done(SERVICE,"share")
-elif active=="予定表":
-    meeting=st.radio("会議の種類",["今すぐ会議","予定された会議","画面共有のみ"],horizontal=True)
-    if st.button("会議を開始",use_container_width=True):
-        st.session_state.Teams_meeting=meeting; mark_task_done(SERVICE,"meeting")
-else:
-    st.caption("このタブはTeamsの画面構成を確認するための表示です。")
-st.markdown("</div>",unsafe_allow_html=True)
-st.markdown("<div class='teams-shell'><div class='teams-left'><strong>チーム</strong><br>一般<br>M365移行<br>研修連絡</div><div class='teams-main'>",unsafe_allow_html=True)
-for i,m in enumerate(st.session_state.Teams_messages):
-    cls="chat-me" if m.startswith("あなた") else "chat-other"
-    st.markdown(f"<div class='chat-bubble {cls}'>{html.escape(m)}</div>",unsafe_allow_html=True)
-st.markdown(f"<div class='share-panel'>共有ファイル：{html.escape(st.session_state.Teams_shared)}<br>会議状態：{html.escape(st.session_state.Teams_meeting)}</div>",unsafe_allow_html=True)
-st.markdown("</div></div>",unsafe_allow_html=True)
-if st.button("Teamsの体験をリセット"):
-    reset_service(SERVICE)
-close_shell()
+        st.session_state.Teams_file=fname; st.session_state.Teams_messages.append(("あなた",f"ファイルを共有しました：{fname}",True)); complete_task(SERVICE,"file")
+elif active=="会議":
+    title=st.text_input("会議タイトル","M365移行説明会")
+    if st.button("今すぐ会議を開始",use_container_width=True):
+        st.session_state.Teams_meeting=title; complete_task(SERVICE,"meeting")
+elif active=="チーム": st.info("チームではチャネル単位で会話とファイルを管理します。")
+elif active=="アクティビティ": st.info("メンションや返信の通知をここで確認します。")
+ribbon_end()
+
+msgs=""
+for sender,msg,isfile in st.session_state.Teams_messages:
+    cls="msg me" if sender=="あなた" else "msg"
+    msg=html.escape(msg).replace("@佐藤","<span class='mention'>@佐藤</span>").replace("@田中","<span class='mention'>@田中</span>").replace("@情報システム担当","<span class='mention'>@情報システム担当</span>")
+    msgs+=f"<div class='{cls}'><strong>{sender}</strong><br>{msg}</div>"
+if st.session_state.Teams_reaction:
+    msgs += f"<div class='small'>リアクション：{html.escape(st.session_state.Teams_reaction)}</div>"
+meeting = f"<div class='file-card'>進行中の会議：{html.escape(st.session_state.Teams_meeting)}</div>" if st.session_state.Teams_meeting else ""
+st.markdown(f"""
+<div class='teams-shell'>
+ <div class='teams-sidebar'><strong>Microsoft Teams</strong><p class='muted'>チャット</p><p>移行プロジェクト</p><p>情報共有</p></div>
+ <div class='teams-main'><div class='teams-head'>移行プロジェクト</div><div class='chat-list'>{msgs}{meeting}</div></div>
+</div>
+""",unsafe_allow_html=True)
+if st.button("Teamsの体験をリセット"): reset(SERVICE)

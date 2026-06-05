@@ -1,32 +1,8 @@
 SERVICES = {
-    "Word": {
-        "icon": "📄",
-        "url": "https://word.cloud.microsoft/ja-jp/",
-        "description": "文書作成・共同編集"
-    },
-    "Excel": {
-        "icon": "📊",
-        "url": "https://excel.cloud.microsoft/ja-jp/",
-        "description": "表計算・分析"
-    },
-    "Teams": {
-        "icon": "💬",
-        "url": "https://www.microsoft.com/ja-jp/microsoft-teams/log-in",
-        "description": "チャット・会議"
-    },
-    "OneDrive": {
-        "icon": "☁️",
-        "url": "https://www.microsoft.com/ja-jp/microsoft-365/onedrive/online-cloud-storage",
-        "description": "保存・共有"
-    },
-    "SharePoint": {
-        "icon": "📁",
-        "url": "https://www.microsoft.com/en-us/microsoft-365/sharepoint/collaboration",
-        "description": "サイト・文書管理"
-    },
-    "Copilot": {
-        "icon": "🤖",
-        "url": "https://copilot.microsoft.com/",
-        "description": "AI支援"
-    },
+    "Word": {"url": "https://word.cloud.microsoft/ja-jp/", "desc": "文書作成"},
+    "Excel": {"url": "https://excel.cloud.microsoft/ja-jp/", "desc": "表計算"},
+    "Teams": {"url": "https://teams.microsoft.com/", "desc": "チャット・会議"},
+    "OneDrive": {"url": "https://onedrive.live.com/", "desc": "保存・共有"},
+    "SharePoint": {"url": "https://www.microsoft.com/ja-jp/microsoft-365/sharepoint/collaboration", "desc": "サイト・文書管理"},
+    "Copilot": {"url": "https://copilot.microsoft.com/", "desc": "AI支援"},
 }
