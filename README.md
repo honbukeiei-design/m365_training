@@ -1,15 +1,8 @@
 # Microsoft 365 体験トレーニング
 
-Streamlitで動作する、Microsoft 365移行研修向けの疑似操作トレーニングアプリです。
+Microsoft 365 の主要サービスを、実操作画面に近いUI上で体験するStreamlitアプリです。
 
-## 実行方法
-
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
-
-## 収録サービス
+## 対象サービス
 
 - Word
 - Excel
@@ -18,6 +11,19 @@ streamlit run app.py
 - SharePoint
 - Copilot
 
-## 補足
+## 実行方法
 
-このアプリは研修用の疑似UIです。実際のMicrosoft 365サービスとは完全一致しませんが、基本操作の流れを体験できるように構成しています。
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+## 設計方針
+
+- M365風の画面上で操作を体験できる構成
+- 操作後に別の「適用」ボタンを押さず、自動でUIに反映
+- 各サービスの体験完了後は、下部の実サービスリンクから本番環境へ移行
+
+## 注意
+
+このアプリは研修用の疑似UIです。Microsoft 365そのものではありません。
