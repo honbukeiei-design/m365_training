@@ -1,7 +1,6 @@
 # Microsoft 365 体験トレーニング
 
-Streamlitで動作する、Microsoft 365移行研修向けの疑似操作アプリです。
-Word、Excel、Teams、OneDrive、SharePoint、Copilotの基本操作を、実際のアプリ画面に近い構成で体験できます。
+Microsoft 365 の基本操作を、ブラウザー上の疑似UIで体験するための Streamlit アプリです。
 
 ## 実行方法
 
@@ -12,11 +11,7 @@ streamlit run app.py
 
 ## 構成
 
-- `app.py` : トップ画面
-- `pages/` : 各サービスの体験画面
-- `modules/` : 共通UI・進捗管理
-- `assets/style.css` : M365風UI
-
-## 注意
-
-これは研修用の疑似UIです。Microsoft 365公式サービスそのものではありません。
+- Word: リボン、白紙ページ編集、書式、表、保存、共有、コメント
+- Excel: セル編集、数式バー、SUM/AVERAGE/MAX/MIN、表、グラフ
+- Teams: @メンション、送信、リアクション、ファイル共有、会議
+- OneDrive / SharePoint / Copilot: 主要操作の疑似体験
