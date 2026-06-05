@@ -1,11 +1,39 @@
+import html
 import streamlit as st
-import streamlit.components.v1 as components
-from modules.ui import load_css, page_header
-from modules.urls import M365_URLS
-st.set_page_config(page_title="Teams Training", page_icon="💬", layout="wide")
-load_css(); page_header("Teams：チャット・ファイル共有・会議", "画面上部の指示に沿って、チャット送信、返信、ファイル共有、会議開始を体験します。")
-url=M365_URLS['Teams']
-html="""
-<html><head><meta charset='utf-8'><style>body{margin:0;font-family:'Segoe UI','Yu Gothic',sans-serif;background:#eef0fb}.app{border:1px solid #c7c9e8;border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 12px 32px #0002}.top{background:#464775;color:white;padding:12px 16px;font-weight:800}.task{background:#f4f3ff;padding:12px 16px;border-bottom:1px solid #c7c9e8;font-weight:800;color:#3730a3}.body{display:grid;grid-template-columns:230px 1fr 300px;min-height:620px}.nav{background:#f6f6fb;border-right:1px solid #d5d7eb;padding:12px}.chat{padding:16px;background:#fff}.side{background:#fbfbff;border-left:1px solid #d5d7eb;padding:14px}.item{padding:10px;border-radius:10px;margin:6px 0;background:white;border:1px solid #e0e2ef}.msg{background:#f3f4f8;border-radius:12px;padding:10px;margin:8px 0}.me{background:#e7e8ff;margin-left:50px}button{border:1px solid #b7b9df;background:#fff;border-radius:9px;padding:9px 11px;margin:4px;font-weight:700;cursor:pointer}input{width:78%;padding:10px;border:1px solid #c7c9e8;border-radius:10px}.done{color:#15803d;font-weight:800}.cta{display:none;background:#ecfdf3;border:1px solid #86efac;border-radius:14px;padding:14px;margin-top:14px}.cta a{display:block;background:#464775;color:white;padding:10px;border-radius:10px;text-align:center;text-decoration:none;font-weight:800;margin-top:10px}</style></head><body><div class='app'><div class='top'>Microsoft Teams</div><div id='task' class='task'></div><div class='body'><div class='nav'><b>チーム</b><div class='item'>経営企画</div><div class='item'>M365移行PJ</div><div class='item'>研修準備</div></div><div class='chat'><h2>M365移行PJ / 一般</h2><div id='msgs'><div class='msg'>佐藤：研修資料の最新版を共有してください。</div></div><input id='inp' placeholder='新しいメッセージを入力'><button onclick='send()'>送信</button><br><button onclick='reply()'>返信</button><button onclick='file()'>ファイル共有</button><button onclick='meet()'>会議開始</button><div id='meeting'></div></div><div class='side'><h3>体験チェック</h3><div id='checks'></div><div id='cta' class='cta'><b>体験完了です。</b><br>次は実際のTeamsで試してください。<a href='__URL__' target='_blank'>実体験をしてください：Teamsを開く ↗</a><small>__URL__</small></div></div></div></div><script>const done={send:false,reply:false,file:false,meet:false};const labels={send:'チャット送信',reply:'返信',file:'ファイル共有',meet:'会議開始'};function add(t,me=false){document.getElementById('msgs').innerHTML+=`<div class='msg ${me?'me':''}'>${t}</div>`}function mark(k){done[k]=true;update()}function send(){let v=document.getElementById('inp').value||'研修資料を共有します。';add('あなた：'+v,true);mark('send')}function reply(){add('あなた：最新版を確認しました。',true);mark('reply')}function file(){add('あなた：📎 M365研修資料.pptx を共有しました。',true);mark('file')}function meet(){document.getElementById('meeting').innerHTML='<div class=msg>📅 会議を開始しました。参加リンクが作成されました。</div>';mark('meet')}function update(){let n=Object.keys(done).find(k=>!done[k]);document.getElementById('task').textContent=n?'体験：'+labels[n]+'を行ってください。':'体験完了：実体験URLからTeamsを開いてください。';document.getElementById('checks').innerHTML=Object.keys(done).map(k=>`<div class='${done[k]?'done':''}'>${done[k]?'✓':'○'} ${labels[k]}</div>`).join('');if(!n)document.getElementById('cta').style.display='block'}update()</script></body></html>"""
-html = html.replace("__URL__", url)
-components.html(html,height=760,scrolling=True)
+from modules.ui import load_css, titlebar, app_header, close_shell, service_launcher, training_strip, ribbon_tabs, mark_task_done, reset_service
+SERVICE="Teams"
+TASKS=[{"id":"chat","label":"チャットで宛先とメッセージを選び、送信してください。"},{"id":"share","label":"ファイルを選び、チャットに共有してください。"},{"id":"meeting","label":"会議の種類を選び、会議開始を反映してください。"}]
+TABS=["チャット","チーム","予定表","ファイル","アプリ"]
+st.set_page_config(page_title="Teams 体験",page_icon="💬",layout="wide")
+load_css(); titlebar(); service_launcher(SERVICE); training_strip(SERVICE,TASKS)
+st.session_state.setdefault("Teams_messages", ["佐藤: 会議資料を確認してください。", "田中: OneDriveに保存しました。"])
+st.session_state.setdefault("Teams_shared", "未共有")
+st.session_state.setdefault("Teams_meeting", "未開始")
+app_header("Teams","チャット、ファイル共有、会議開始を選択肢付きで体験します。")
+active=ribbon_tabs(SERVICE,TABS)
+st.markdown("<div class='ribbon'>",unsafe_allow_html=True)
+if active=="チャット":
+    to=st.selectbox("送信先",["佐藤さん","田中さん","M365移行チーム"])
+    msg=st.text_input("メッセージ",value="資料を共有しました。確認をお願いします。")
+    if st.button("送信",use_container_width=True):
+        st.session_state.Teams_messages.append(f"あなた → {to}: {msg}"); mark_task_done(SERVICE,"chat")
+elif active=="ファイル":
+    f=st.selectbox("共有するファイル",["移行手順書.docx","研修日程.xlsx","FAQ.pdf"])
+    if st.button("チャットに共有",use_container_width=True):
+        st.session_state.Teams_shared=f; st.session_state.Teams_messages.append(f"あなた: {f} を共有しました。論") if False else st.session_state.Teams_messages.append(f"あなた: {f} を共有しました。"); mark_task_done(SERVICE,"share")
+elif active=="予定表":
+    meeting=st.radio("会議の種類",["今すぐ会議","予定された会議","画面共有のみ"],horizontal=True)
+    if st.button("会議を開始",use_container_width=True):
+        st.session_state.Teams_meeting=meeting; mark_task_done(SERVICE,"meeting")
+else:
+    st.caption("このタブはTeamsの画面構成を確認するための表示です。")
+st.markdown("</div>",unsafe_allow_html=True)
+st.markdown("<div class='teams-shell'><div class='teams-left'><strong>チーム</strong><br>一般<br>M365移行<br>研修連絡</div><div class='teams-main'>",unsafe_allow_html=True)
+for i,m in enumerate(st.session_state.Teams_messages):
+    cls="chat-me" if m.startswith("あなた") else "chat-other"
+    st.markdown(f"<div class='chat-bubble {cls}'>{html.escape(m)}</div>",unsafe_allow_html=True)
+st.markdown(f"<div class='share-panel'>共有ファイル：{html.escape(st.session_state.Teams_shared)}<br>会議状態：{html.escape(st.session_state.Teams_meeting)}</div>",unsafe_allow_html=True)
+st.markdown("</div></div>",unsafe_allow_html=True)
+if st.button("Teamsの体験をリセット"):
+    reset_service(SERVICE)
+close_shell()

@@ -1,11 +1,41 @@
+import html
 import streamlit as st
-import streamlit.components.v1 as components
-from modules.ui import load_css, page_header
-from modules.urls import M365_URLS
-st.set_page_config(page_title="SharePoint Training", page_icon="📁", layout="wide")
-load_css(); page_header("SharePoint：チームサイトとドキュメント管理", "サイト選択、ドキュメント登録、権限確認、ニュース投稿を体験します。")
-url=M365_URLS['SharePoint']
-html="""
-<html><head><meta charset='utf-8'><style>body{margin:0;font-family:'Segoe UI','Yu Gothic',sans-serif;background:#eef7f7}.app{border:1px solid #c6dddd;border-radius:20px;background:white;overflow:hidden;box-shadow:0 12px 32px #0002}.top{background:#038387;color:white;padding:12px 16px;font-weight:800}.task{background:#e6fffb;color:#115e59;padding:12px 16px;font-weight:800}.body{display:grid;grid-template-columns:240px 1fr 300px;min-height:620px}.nav{background:#f3fbfb;border-right:1px solid #c6dddd;padding:12px}.main{padding:16px}.side{background:#fbffff;border-left:1px solid #c6dddd;padding:14px}.tile,.doc{border:1px solid #d7e7e7;border-radius:12px;background:white;padding:12px;margin:8px 0}button{border:1px solid #a9d5d5;background:white;border-radius:9px;padding:9px 11px;margin:4px;font-weight:700;cursor:pointer}.done{color:#15803d;font-weight:800}.cta{display:none;background:#ecfdf3;border:1px solid #86efac;border-radius:14px;padding:14px;margin-top:14px}.cta a{display:block;background:#038387;color:white;padding:10px;border-radius:10px;text-align:center;text-decoration:none;font-weight:800;margin-top:10px}</style></head><body><div class='app'><div class='top'>SharePoint</div><div class='task' id='task'></div><div class='body'><div class='nav'><b>サイト</b><div class='tile' onclick='site()'>M365移行PJ</div><div class='tile'>経営企画</div><div class='tile'>研修ポータル</div></div><div class='main'><h2 id='siteTitle'>M365移行PJ</h2><button onclick='upload()'>ドキュメント追加</button><button onclick='permission()'>権限確認</button><button onclick='news()'>ニュース投稿</button><button onclick='library()'>ライブラリ表示</button><div id='docs'><div class='doc'>📄 移行計画.docx　<span>閲覧: メンバー</span></div><div class='doc'>📊 進捗管理.xlsx　<span>編集: 所有者</span></div></div><div id='log'></div></div><div class='side'><h3>体験チェック</h3><div id='checks'></div><div id='cta' class='cta'><b>体験完了です。</b><br>次は実際のSharePointで試してください。<a href='__URL__' target='_blank'>実体験をしてください：SharePointを開く ↗</a><small>__URL__</small></div></div></div></div><script>const done={site:false,upload:false,permission:false,news:false};const labels={site:'サイトを選択',upload:'ドキュメントを追加',permission:'権限を確認',news:'ニュースを投稿'};function mark(k){done[k]=true;update()}function site(){document.getElementById('siteTitle').textContent='M365移行PJ';mark('site')}function upload(){document.getElementById('docs').innerHTML+='<div class=doc>📄 研修FAQ.docx　<span>新規追加</span></div>';mark('upload')}function permission(){document.getElementById('log').innerHTML='<p>🔐 メンバーは編集、閲覧者は表示のみです。</p>';mark('permission')}function news(){document.getElementById('log').innerHTML='<p>📰 ニュース「M365研修を開始します」を投稿しました。</p>';mark('news')}function library(){mark('site')}function update(){let n=Object.keys(done).find(k=>!done[k]);document.getElementById('task').textContent=n?'体験：'+labels[n]+'してください。':'体験完了：実体験URLからSharePointを開いてください。';document.getElementById('checks').innerHTML=Object.keys(done).map(k=>`<div class='${done[k]?'done':''}'>${done[k]?'✓':'○'} ${labels[k]}</div>`).join('');if(!n)document.getElementById('cta').style.display='block'}update()</script></body></html>"""
-html = html.replace("__URL__", url)
-components.html(html,height=760,scrolling=True)
+from modules.ui import load_css, titlebar, app_header, close_shell, service_launcher, training_strip, ribbon_tabs, mark_task_done, reset_service
+SERVICE="SharePoint"
+TASKS=[{"id":"site","label":"サイトを選び、表示対象のドキュメント ライブラリを切り替えてください。"},{"id":"permission","label":"権限レベルを選び、サイト権限に反映してください。"},{"id":"news","label":"ニュース投稿の種類を選び、サイトに追加してください。"}]
+TABS=["ホーム","ドキュメント","ページ","ニュース","権限","サイトの設定"]
+st.set_page_config(page_title="SharePoint 体験",page_icon="📁",layout="wide")
+load_css(); titlebar(); service_launcher(SERVICE); training_strip(SERVICE,TASKS)
+st.session_state.setdefault("SharePoint_site","経営企画サイト")
+st.session_state.setdefault("SharePoint_permission","閲覧")
+st.session_state.setdefault("SharePoint_news",[])
+app_header("SharePoint","サイト、ドキュメント、ニュース、権限管理を選択肢付きで体験します。")
+active=ribbon_tabs(SERVICE,TABS)
+st.markdown("<div class='ribbon'>",unsafe_allow_html=True)
+if active=="ホーム":
+    site=st.selectbox("サイト",["経営企画サイト","情報システムサイト","M365移行プロジェクト"])
+    if st.button("サイトを表示",use_container_width=True):
+        st.session_state.SharePoint_site=site; mark_task_done(SERVICE,"site")
+elif active=="権限":
+    level=st.radio("権限",["閲覧","投稿","編集","所有者"],horizontal=True)
+    if st.button("権限を適用",use_container_width=True):
+        st.session_state.SharePoint_permission=level; mark_task_done(SERVICE,"permission")
+elif active=="ニュース":
+    news=st.selectbox("ニュース種別",["移行のお知らせ","研修開催案内","FAQ更新"])
+    if st.button("ニュースを投稿",use_container_width=True):
+        if news not in st.session_state.SharePoint_news: st.session_state.SharePoint_news.append(news)
+        mark_task_done(SERVICE,"news")
+else:
+    st.caption("選択したサイトの内容を下に表示します。")
+st.markdown("</div>",unsafe_allow_html=True)
+st.markdown(f"<div class='site-card'><h3>{html.escape(st.session_state.SharePoint_site)}</h3><span class='badge'>権限：{html.escape(st.session_state.SharePoint_permission)}</span></div>",unsafe_allow_html=True)
+st.markdown("#### ドキュメント ライブラリ")
+rows="".join(f"<div class='file-row'><span>📄 {html.escape(f)}</span><span class='badge'>SharePoint</span><span>共有済み</span></div>" for f in ["議事録.docx","移行計画.xlsx","権限一覧.xlsx"])
+st.markdown(f"<div class='file-list'>{rows}</div>",unsafe_allow_html=True)
+if st.session_state.SharePoint_news:
+    st.markdown("#### ニュース")
+    for n in st.session_state.SharePoint_news:
+        st.markdown(f"<div class='share-panel'>📰 {html.escape(n)}</div>",unsafe_allow_html=True)
+if st.button("SharePointの体験をリセット"):
+    reset_service(SERVICE)
+close_shell()

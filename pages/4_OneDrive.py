@@ -1,11 +1,41 @@
+import html
 import streamlit as st
-import streamlit.components.v1 as components
-from modules.ui import load_css, page_header
-from modules.urls import M365_URLS
-st.set_page_config(page_title="OneDrive Training", page_icon="☁️", layout="wide")
-load_css(); page_header("OneDrive：保存・共有・同期", "アップロード、共有リンク作成、同期状態確認、復元を体験します。")
-url=M365_URLS['OneDrive']
-html="""
-<html><head><meta charset='utf-8'><style>body{margin:0;font-family:'Segoe UI','Yu Gothic',sans-serif;background:#eef6ff}.app{border:1px solid #c6d7ec;border-radius:20px;background:white;overflow:hidden;box-shadow:0 12px 32px #0002}.top{background:#0078d4;color:white;padding:12px 16px;font-weight:800}.task{background:#eaf4ff;padding:12px 16px;font-weight:800;color:#075985}.body{display:grid;grid-template-columns:1fr 300px;gap:16px;padding:18px}button{border:1px solid #b8cce5;background:#fff;border-radius:9px;padding:9px 11px;margin:4px;font-weight:700;cursor:pointer}.file{display:grid;grid-template-columns:1fr 100px 130px;align-items:center;border-bottom:1px solid #e1e8f0;padding:12px}.head{background:#f7f9fc;font-weight:800}.side{border:1px solid #cbd5e1;border-radius:16px;padding:14px;background:#fff}.done{color:#15803d;font-weight:800}.cta{display:none;background:#ecfdf3;border:1px solid #86efac;border-radius:14px;padding:14px;margin-top:14px}.cta a{display:block;background:#0078d4;color:white;padding:10px;border-radius:10px;text-align:center;text-decoration:none;font-weight:800;margin-top:10px}</style></head><body><div class='app'><div class='top'>OneDrive</div><div class='task' id='task'></div><div class='body'><div><button onclick='upload()'>アップロード</button><button onclick='sync()'>同期状態</button><button onclick='restore()'>復元</button><div class='file head'><span>名前</span><span>状態</span><span>操作</span></div><div id='files'><div class='file'><span>研修資料.docx</span><span>同期済み</span><button onclick='share()'>共有</button></div><div class='file'><span>売上管理.xlsx</span><span>同期済み</span><button onclick='share()'>共有</button></div></div><div id='log'></div></div><div class='side'><h3>体験チェック</h3><div id='checks'></div><div class='cta' id='cta'><b>体験完了です。</b><br>次は実際のOneDriveで試してください。<a href='__URL__' target='_blank'>実体験をしてください：OneDriveを開く ↗</a><small>__URL__</small></div></div></div></div><script>const done={upload:false,share:false,sync:false,restore:false};const labels={upload:'ファイルをアップロード',share:'共有リンクを作成',sync:'同期状態を確認',restore:'バージョンを復元'};function mark(k){done[k]=true;update()}function upload(){document.getElementById('files').innerHTML+='<div class=file><span>新規アップロード.pdf</span><span>処理中</span><button onclick=share()>共有</button></div>';mark('upload')}function share(){document.getElementById('log').innerHTML='<p>🔗 共有リンクを作成しました：組織内のユーザーが表示可能</p>';mark('share')}function sync(){document.getElementById('log').innerHTML='<p>✅ すべてのファイルがクラウドと同期済みです。</p>';mark('sync')}function restore(){document.getElementById('log').innerHTML='<p>↩ 1つ前のバージョンを復元しました。</p>';mark('restore')}function update(){let n=Object.keys(done).find(k=>!done[k]);document.getElementById('task').textContent=n?'体験：'+labels[n]+'してください。':'体験完了：実体験URLからOneDriveを開いてください。';document.getElementById('checks').innerHTML=Object.keys(done).map(k=>`<div class='${done[k]?'done':''}'>${done[k]?'✓':'○'} ${labels[k]}</div>`).join('');if(!n)document.getElementById('cta').style.display='block'}update()</script></body></html>"""
-html = html.replace("__URL__", url)
-components.html(html,height=700,scrolling=True)
+from modules.ui import load_css, titlebar, app_header, close_shell, service_launcher, training_strip, ribbon_tabs, mark_task_done, reset_service
+SERVICE="OneDrive"
+TASKS=[{"id":"upload","label":"アップロードするファイル種類を選び、一覧に追加してください。"},{"id":"share","label":"共有方法を選び、共有リンク状態を反映してください。"},{"id":"sync","label":"同期対象を選び、同期状態を更新してください。"},{"id":"restore","label":"復元する版を選び、復元状態を表示してください。"}]
+TABS=["ホーム","アップロード","共有","同期","履歴","ごみ箱"]
+st.set_page_config(page_title="OneDrive 体験",page_icon="☁️",layout="wide")
+load_css(); titlebar(); service_launcher(SERVICE); training_strip(SERVICE,TASKS)
+st.session_state.setdefault("OneDrive_files", ["移行手順書.docx","研修日程.xlsx"])
+st.session_state.setdefault("OneDrive_share", "未共有")
+st.session_state.setdefault("OneDrive_sync", "未同期")
+st.session_state.setdefault("OneDrive_restore", "未実行")
+app_header("OneDrive","アップロード、共有、同期、復元を選択肢付きで体験します。")
+active=ribbon_tabs(SERVICE,TABS)
+st.markdown("<div class='ribbon'>",unsafe_allow_html=True)
+if active=="アップロード":
+    f=st.selectbox("アップロードするファイル",["会議資料.docx","予算表.xlsx","説明動画.mp4"])
+    if st.button("アップロード",use_container_width=True):
+        if f not in st.session_state.OneDrive_files: st.session_state.OneDrive_files.append(f)
+        mark_task_done(SERVICE,"upload")
+elif active=="共有":
+    f=st.selectbox("共有対象",st.session_state.OneDrive_files)
+    method=st.radio("共有方法",["指定したユーザー","組織内リンク","閲覧のみリンク"],horizontal=True)
+    if st.button("共有リンクを作成",use_container_width=True):
+        st.session_state.OneDrive_share=f"{f}：{method}"; mark_task_done(SERVICE,"share")
+elif active=="同期":
+    target=st.radio("同期対象",["デスクトップ","ドキュメント","写真"],horizontal=True)
+    if st.button("同期を開始",use_container_width=True):
+        st.session_state.OneDrive_sync=f"{target} を同期中"; mark_task_done(SERVICE,"sync")
+elif active=="履歴":
+    version=st.selectbox("復元する版",["1時間前","昨日 17:30","先週金曜日"])
+    if st.button("この版を復元",use_container_width=True):
+        st.session_state.OneDrive_restore=f"{version} の版を復元"; mark_task_done(SERVICE,"restore")
+else:
+    st.caption("ファイル一覧から状態を確認できます。")
+st.markdown("</div>",unsafe_allow_html=True)
+rows="".join(f"<div class='file-row'><span>📄 {html.escape(f)}</span><span class='badge'>クラウド</span><span>最終更新 今日</span></div>" for f in st.session_state.OneDrive_files)
+st.markdown(f"<div class='file-list'>{rows}</div><div class='share-panel'>共有：{html.escape(st.session_state.OneDrive_share)}<br>同期：{html.escape(st.session_state.OneDrive_sync)}<br>復元：{html.escape(st.session_state.OneDrive_restore)}</div>",unsafe_allow_html=True)
+if st.button("OneDriveの体験をリセット"):
+    reset_service(SERVICE)
+close_shell()

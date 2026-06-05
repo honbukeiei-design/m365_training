@@ -1,31 +1,137 @@
+import html
+import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
-from modules.ui import load_css, page_header
-from modules.urls import M365_URLS
+from modules.ui import load_css, titlebar, app_header, close_shell, service_launcher, training_strip, ribbon_tabs, mark_task_done, reset_service
 
-st.set_page_config(page_title="Excel Training", page_icon="📊", layout="wide")
-load_css()
-page_header("Excel：セル編集・集計・グラフ", "リボン操作を使い、セル編集から分析までを順番に体験します。")
-excel_url = M365_URLS["Excel"]
-html = f"""
-<!doctype html><html><head><meta charset='utf-8'><style>
-body{{margin:0;font-family:'Segoe UI','Yu Gothic',Meiryo,sans-serif;background:#eef3f8;color:#1f2937}} .shell{{border:1px solid #cbd5e1;border-radius:20px;background:white;overflow:hidden;box-shadow:0 14px 35px #0002}} .top{{background:#217346;color:white;padding:12px 16px;font-weight:800}} .task{{background:#ecfdf3;border-bottom:1px solid #b7e4c7;padding:12px 16px;font-weight:800;color:#14532d}} .tabs{{display:flex;gap:4px;background:#f8fafc;border-bottom:1px solid #cbd5e1;padding:8px 12px 0}} .tab{{border:0;background:transparent;padding:10px 16px;border-radius:8px 8px 0 0;font-weight:700;cursor:pointer}} .tab.active{{background:white;border:1px solid #cbd5e1;border-bottom:white;color:#217346}} .ribbon{{display:flex;gap:8px;flex-wrap:wrap;padding:12px;border-bottom:1px solid #cbd5e1;min-height:72px}} .btn{{border:1px solid #b8c6d8;background:#fff;border-radius:8px;padding:8px 10px;font-weight:700;cursor:pointer}} .gridwrap{{display:grid;grid-template-columns:1fr 310px;gap:16px;padding:18px;background:#e9edf5}} table{{border-collapse:collapse;background:white}} th{{background:#eef2f7;color:#475569;font-size:12px}} td,th{{border:1px solid #cbd5e1;width:110px;height:34px;text-align:left;padding:5px}} td{{cursor:text}} td.sel{{outline:3px solid #217346;outline-offset:-3px}} .side{{background:#fff;border:1px solid #cbd5e1;border-radius:16px;padding:14px}} .done{{color:#15803d;font-weight:800}} .cta{{display:none;background:#ecfdf3;border:1px solid #86efac;border-radius:14px;padding:14px;margin-top:14px}} .cta a{{display:block;background:#217346;color:white;padding:10px;border-radius:10px;text-align:center;text-decoration:none;font-weight:800;margin-top:10px}} #chart{{height:160px;display:flex;align-items:end;gap:10px;margin-top:12px;padding:12px;background:#f8fafc;border:1px solid #dbe4f0;border-radius:12px}} .bar{{width:42px;background:#217346;border-radius:6px 6px 0 0}}
-</style></head><body><div class='shell'><div class='top'>Excel - 売上管理.xlsx</div><div class='task' id='task'>体験 1/5：セルを選択し、太字または塗りつぶしを押してください。</div><div class='tabs' id='tabs'></div><div class='ribbon' id='ribbon'></div><div class='gridwrap'><div><table id='sheet'></table><div id='chart'></div></div><div class='side'><h3>体験チェック</h3><div id='checks'></div><div class='cta' id='cta'><b>体験完了です。</b><br>次は実際のExcel for the webで操作してください。<a href='{excel_url}' target='_blank'>実体験をしてください：Excelを開く ↗</a><small>{excel_url}</small></div></div></div></div>
-<script>
-const tabs=['ホーム','挿入','ページレイアウト','数式','データ','校閲','表示']; let active='ホーム'; let selected=null; const done={{format:false,sum:false,chart:false,protect:false,view:false}};
-const rows=[['','A','B','C','D'],['1','部門','4月','5月','合計'],['2','総務','120','135',''],['3','医事','180','210',''],['4','看護','260','280','']];
-function drawSheet(){{let h=''; rows.forEach((r,i)=>{{h+='<tr>'+r.map((c,j)=>i==0||j==0?`<th>${{c}}</th>`:`<td contenteditable onclick="sel(this)">${{c}}</td>`).join('')+'</tr>'}}); document.getElementById('sheet').innerHTML=h;}}
-function sel(td){{document.querySelectorAll('td').forEach(x=>x.classList.remove('sel'));td.classList.add('sel');selected=td;}}
-function tab(t){{active=t;drawTabs();drawRibbon();}}
-function drawTabs(){{document.getElementById('tabs').innerHTML=tabs.map(t=>`<button class='tab ${{t==active?'active':''}}' onclick="tab('${{t}}')">${{t}}</button>`).join('')}}
-function drawRibbon(){{let r=''; if(active==='ホーム')r=`<button class='btn' onclick='fmt("bold")'>太字</button><button class='btn' onclick='fmt("underline")'>下線</button><button class='btn' onclick='fill()'>塗りつぶし</button><button class='btn' onclick='border()'>罫線</button>`; if(active==='挿入')r=`<button class='btn' onclick='makeChart()'>グラフ</button><button class='btn' onclick='addRow()'>行挿入</button>`; if(active==='数式')r=`<button class='btn' onclick='sum()'>合計</button><button class='btn' onclick='formula()'>数式表示</button>`; if(active==='データ')r=`<button class='btn' onclick='sortRows()'>並べ替え</button><button class='btn' onclick='filter()'>フィルター</button>`; if(active==='校閲')r=`<button class='btn' onclick='protect()'>シート保護</button><button class='btn' onclick='comment()'>コメント</button>`; if(active==='表示')r=`<button class='btn' onclick='zoom(90)'>90%</button><button class='btn' onclick='zoom(100)'>100%</button><button class='btn' onclick='zoom(120)'>120%</button>`; if(active==='ページレイアウト')r=`<button class='btn' onclick='document.body.style.background="#e5f1ea"'>テーマ</button><button class='btn' onclick='done.format=true;update()'>印刷範囲</button>`; document.getElementById('ribbon').innerHTML=r;}}
-function fmt(p){{if(selected)selected.style[p]='700';done.format=true;update()}} function fill(){{if(selected)selected.style.background='#d9ead3';done.format=true;update()}} function border(){{if(selected)selected.style.border='3px solid #217346';done.format=true;update()}}
-function sum(){{document.querySelectorAll('td')[3].textContent='255';document.querySelectorAll('td')[7].textContent='390';document.querySelectorAll('td')[11].textContent='540';done.sum=true;update()}} function formula(){{alert('=SUM(B2:C2) のように範囲を指定します。')}}
-function makeChart(){{document.getElementById('chart').innerHTML='<div class=bar style="height:70px"></div><div class=bar style="height:100px"></div><div class=bar style="height:135px"></div>';done.chart=true;update()}} function addRow(){{let tr=document.createElement('tr');tr.innerHTML='<th>5</th><td contenteditable onclick="sel(this)">薬剤</td><td contenteditable onclick="sel(this)">90</td><td contenteditable onclick="sel(this)">100</td><td contenteditable onclick="sel(this)"></td>';document.getElementById('sheet').appendChild(tr);done.chart=true;update()}}
-function protect(){{document.querySelectorAll('td').forEach(td=>td.contentEditable=false);done.protect=true;update()}} function comment(){{if(selected)selected.title='確認してください';done.protect=true;update()}}
-function zoom(v){{document.getElementById('sheet').style.transform=`scale(${{v/100}})`;document.getElementById('sheet').style.transformOrigin='top left';done.view=true;update()}} function sortRows(){{done.sum=true;update()}} function filter(){{done.sum=true;update()}}
-function update(){{const labels={{format:'セル書式を変更',sum:'合計を計算',chart:'グラフまたは行を追加',protect:'校閲機能を使用',view:'表示倍率を変更'}}; document.getElementById('checks').innerHTML=Object.keys(done).map(k=>`<div class='${{done[k]?'done':''}}'>${{done[k]?'✓':'○'}} ${{labels[k]}}</div>`).join(''); let next=Object.keys(done).find(k=>!done[k]); document.getElementById('task').textContent=next?'体験：'+labels[next]+'してください。':'体験完了：実体験URLからExcelを開いてください。'; if(!next)document.getElementById('cta').style.display='block';}}
-drawSheet();drawTabs();drawRibbon();update();
-</script></body></html>
-"""
-components.html(html, height=840, scrolling=True)
+SERVICE = "Excel"
+TASKS = [
+    {"id": "cell_edit", "label": "セルを選び、値を変更して表に反映してください。"},
+    {"id": "format", "label": "ホームで書式を選び、選択セルに反映してください。"},
+    {"id": "calc", "label": "数式で集計方法を選び、合計などを計算してください。"},
+    {"id": "chart", "label": "挿入でグラフ種類を選び、グラフを表示してください。"},
+    {"id": "view", "label": "表示倍率を選び、表の表示に反映してください。"},
+    {"id": "protect", "label": "校閲で保護設定を選び、シート状態に反映してください。"},
+]
+TABS = ["ホーム", "挿入", "ページ レイアウト", "数式", "データ", "校閲", "表示"]
+
+def init():
+    st.session_state.setdefault("Excel_rows", [
+        {"項目": "コピー用紙", "数量": 12, "単価": 500},
+        {"項目": "封筒", "数量": 8, "単価": 250},
+        {"項目": "ファイル", "数量": 6, "単価": 700},
+    ])
+    st.session_state.setdefault("Excel_selected", "B2")
+    st.session_state.setdefault("Excel_cell_format", "標準")
+    st.session_state.setdefault("Excel_calc", "未計算")
+    st.session_state.setdefault("Excel_chart", "未挿入")
+    st.session_state.setdefault("Excel_zoom", "100%")
+    st.session_state.setdefault("Excel_protect", "未保護")
+
+st.set_page_config(page_title="Excel 体験", page_icon="📊", layout="wide")
+load_css(); titlebar(); service_launcher(SERVICE); training_strip(SERVICE, TASKS); init()
+app_header("Excel", "セル操作、書式、集計、グラフ、保護を順番に体験します。")
+active = ribbon_tabs(SERVICE, TABS)
+st.markdown("<div class='ribbon'>", unsafe_allow_html=True)
+
+if active == "ホーム":
+    st.markdown("#### 書式")
+    cell = st.selectbox("対象セル", ["A2", "B2", "C2", "D2", "A3", "B3", "C3", "D3"], index=1)
+    fmt = st.radio("書式", ["太字", "下線", "塗りつぶし", "罫線"], horizontal=True)
+    if st.button("選択セルに書式を適用", use_container_width=True):
+        st.session_state.Excel_selected = cell
+        st.session_state.Excel_cell_format = fmt
+        mark_task_done(SERVICE, "format")
+elif active == "挿入":
+    st.markdown("#### グラフ")
+    chart = st.radio("グラフ種類", ["縦棒グラフ", "折れ線グラフ"], horizontal=True)
+    if st.button("グラフを挿入", use_container_width=True):
+        st.session_state.Excel_chart = chart
+        mark_task_done(SERVICE, "chart")
+elif active == "ページ レイアウト":
+    st.markdown("#### 印刷向き")
+    st.radio("印刷向き", ["縦", "横"], horizontal=True)
+    st.caption("ここでは画面右下の状態表示のみを更新します。")
+elif active == "数式":
+    st.markdown("#### 集計")
+    calc = st.selectbox("集計方法", ["合計", "平均", "最大値"])
+    if st.button("集計を計算", use_container_width=True):
+        values = [r["数量"] * r["単価"] for r in st.session_state.Excel_rows]
+        if calc == "合計":
+            result = sum(values)
+        elif calc == "平均":
+            result = round(sum(values) / len(values), 1)
+        else:
+            result = max(values)
+        st.session_state.Excel_calc = f"{calc}: {result:,} 円"
+        mark_task_done(SERVICE, "calc")
+elif active == "データ":
+    st.markdown("#### 並べ替え")
+    if st.button("金額の大きい順に並べ替え", use_container_width=True):
+        st.session_state.Excel_rows = sorted(st.session_state.Excel_rows, key=lambda x: x["数量"] * x["単価"], reverse=True)
+elif active == "校閲":
+    st.markdown("#### シート保護")
+    protect = st.radio("保護設定", ["未保護", "編集を制限", "読み取り専用"], horizontal=True)
+    if st.button("保護設定を適用", use_container_width=True):
+        st.session_state.Excel_protect = protect
+        mark_task_done(SERVICE, "protect")
+elif active == "表示":
+    st.markdown("#### 表示倍率")
+    zoom = st.radio("ズーム", ["75%", "100%", "125%"], horizontal=True)
+    if st.button("表示倍率を適用", use_container_width=True):
+        st.session_state.Excel_zoom = zoom
+        mark_task_done(SERVICE, "view")
+st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown("#### セル編集")
+edited = st.data_editor(pd.DataFrame(st.session_state.Excel_rows), num_rows="dynamic", use_container_width=True, key="Excel_editor")
+if st.button("セル編集を表に反映", use_container_width=True):
+    records = edited.fillna(0).to_dict("records")
+    for r in records:
+        r["数量"] = int(r.get("数量", 0)); r["単価"] = int(r.get("単価", 0))
+    st.session_state.Excel_rows = records
+    mark_task_done(SERVICE, "cell_edit")
+
+zoom_scale = {"75%":"0.85", "100%":"1", "125%":"1.12"}[st.session_state.Excel_zoom]
+rows = st.session_state.Excel_rows
+fmt = st.session_state.Excel_cell_format
+selected = st.session_state.Excel_selected
+cell_class = {"太字":" excel-bold", "下線":" excel-under", "塗りつぶし":" excel-fill", "罫線":" excel-cell-selected"}.get(fmt, "")
+
+def cell(value, address):
+    cls = "excel-cell-selected" if address == selected else ""
+    if address == selected:
+        cls += cell_class
+    return f"<td class='{cls}'>{html.escape(str(value))}</td>"
+
+body = ""
+for i, r in enumerate(rows, start=2):
+    amount = int(r["数量"]) * int(r["単価"])
+    body += "<tr>" + cell(r["項目"], f"A{i}") + cell(r["数量"], f"B{i}") + cell(r["単価"], f"C{i}") + cell(f"{amount:,}", f"D{i}") + "</tr>"
+chart_html = ""
+if st.session_state.Excel_chart != "未挿入":
+    max_amount = max([int(r["数量"]) * int(r["単価"]) for r in rows] + [1])
+    bars = "".join(f"<div title='{html.escape(str(r['項目']))}' class='chart-bar' style='height:{max(10, int((int(r['数量'])*int(r['単価']))/max_amount*150))}px'></div>" for r in rows)
+    chart_html = f"<h4>{html.escape(st.session_state.Excel_chart)}</h4><div class='chart-bars'>{bars}</div>"
+
+st.markdown(
+    f"""
+    <div class='page-stage'>
+      <div style='transform:scale({zoom_scale});transform-origin:top left'>
+        <div class='excel-grid'>
+          <table class='excel-table'>
+            <tr><th>項目</th><th>数量</th><th>単価</th><th>金額</th></tr>
+            {body}
+            <tr><td colspan='3'><strong>集計セル</strong></td><td><strong>{html.escape(st.session_state.Excel_calc)}</strong></td></tr>
+          </table>
+        </div>
+        {chart_html}
+      </div>
+    </div>
+    <div class='footer-status'><span>選択セル {html.escape(selected)} / 書式 {html.escape(fmt)}</span><span>表示 {html.escape(st.session_state.Excel_zoom)} ・ 保護 {html.escape(st.session_state.Excel_protect)}</span></div>
+    """,
+    unsafe_allow_html=True,
+)
+
+if st.button("Excelの体験をリセット"):
+    reset_service(SERVICE)
+close_shell()
