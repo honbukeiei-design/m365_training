@@ -1,8 +1,0 @@
-[
-  {"app":"Word","title":"文書を作成し、OneDriveまたはSharePointに保存して共有する","complete_url":"https://word.cloud.microsoft/"},
-  {"app":"Excel","title":"合計を確認し、フィルター・グラフ・コメントを使う","complete_url":"https://excel.cloud.microsoft/ja-jp/"},
-  {"app":"Teams","title":"チャネルに投稿し、会議を開始する","complete_url":"https://teams.microsoft.com/"},
-  {"app":"OneDrive","title":"ファイルを選択し、共有リンクとお気に入りを操作する","complete_url":"https://onedrive.live.com/about/ja-jp/signin/"},
-  {"app":"SharePoint","title":"ニュース投稿、ライブラリ表示、権限確認を体験する","complete_url":"https://www.microsoft365.com/launch/sharepoint"},
-  {"app":"Copilot","title":"指示文を入力し、要約・案内文作成を体験する","complete_url":"https://copilot.microsoft.com/"}
-]
