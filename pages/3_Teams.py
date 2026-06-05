@@ -1,37 +1,11 @@
-from pathlib import Path
 import streamlit as st
-from modules.training import page_header, complete_card
-
+import streamlit.components.v1 as components
+from modules.ui import load_css, page_header
+from modules.urls import M365_URLS
 st.set_page_config(page_title="Teams Training", page_icon="💬", layout="wide")
-st.markdown(f"<style>{Path('assets/style.css').read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
-page_header("💬", "Teams：チャットと会議", "メッセージ送信、会議開始、ファイル共有を体験します。")
-
-if "teams_messages" not in st.session_state:
-    st.session_state.teams_messages = ["佐藤：会議資料を共有してください", "田中：SharePointに保存しました"]
-if "teams_done" not in st.session_state:
-    st.session_state.teams_done = False
-
-st.markdown("<div class='m365-card'>", unsafe_allow_html=True)
-st.subheader("チーム：M365移行プロジェクト")
-for msg in st.session_state.teams_messages:
-    st.chat_message("user").write(msg)
-msg = st.chat_input("メッセージを入力")
-if msg:
-    st.session_state.teams_messages.append(f"あなた：{msg}")
-    st.session_state.teams_done = True
-    st.rerun()
-col1, col2, col3 = st.columns(3)
-if col1.button("📅 会議を開始", use_container_width=True):
-    st.success("会議ウィンドウを開始しました。マイク・カメラ・参加者パネルを確認できます。")
-    st.session_state.teams_done = True
-if col2.button("📎 ファイルを共有", use_container_width=True):
-    st.info("SharePoint上の『移行説明資料.pptx』をチャネルに共有しました。")
-    st.session_state.teams_done = True
-if col3.button("✅ チャネルに投稿", use_container_width=True):
-    st.session_state.teams_messages.append("あなた：本日の研修ログを投稿しました")
-    st.session_state.teams_done = True
-    st.rerun()
-st.markdown("</div>", unsafe_allow_html=True)
-
-if st.session_state.teams_done:
-    complete_card("Teams")
+load_css(); page_header("Teams：チャット・ファイル共有・会議", "画面上部の指示に沿って、チャット送信、返信、ファイル共有、会議開始を体験します。")
+url=M365_URLS['Teams']
+html="""
+<html><head><meta charset='utf-8'><style>body{margin:0;font-family:'Segoe UI','Yu Gothic',sans-serif;background:#eef0fb}.app{border:1px solid #c7c9e8;border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 12px 32px #0002}.top{background:#464775;color:white;padding:12px 16px;font-weight:800}.task{background:#f4f3ff;padding:12px 16px;border-bottom:1px solid #c7c9e8;font-weight:800;color:#3730a3}.body{display:grid;grid-template-columns:230px 1fr 300px;min-height:620px}.nav{background:#f6f6fb;border-right:1px solid #d5d7eb;padding:12px}.chat{padding:16px;background:#fff}.side{background:#fbfbff;border-left:1px solid #d5d7eb;padding:14px}.item{padding:10px;border-radius:10px;margin:6px 0;background:white;border:1px solid #e0e2ef}.msg{background:#f3f4f8;border-radius:12px;padding:10px;margin:8px 0}.me{background:#e7e8ff;margin-left:50px}button{border:1px solid #b7b9df;background:#fff;border-radius:9px;padding:9px 11px;margin:4px;font-weight:700;cursor:pointer}input{width:78%;padding:10px;border:1px solid #c7c9e8;border-radius:10px}.done{color:#15803d;font-weight:800}.cta{display:none;background:#ecfdf3;border:1px solid #86efac;border-radius:14px;padding:14px;margin-top:14px}.cta a{display:block;background:#464775;color:white;padding:10px;border-radius:10px;text-align:center;text-decoration:none;font-weight:800;margin-top:10px}</style></head><body><div class='app'><div class='top'>Microsoft Teams</div><div id='task' class='task'></div><div class='body'><div class='nav'><b>チーム</b><div class='item'>経営企画</div><div class='item'>M365移行PJ</div><div class='item'>研修準備</div></div><div class='chat'><h2>M365移行PJ / 一般</h2><div id='msgs'><div class='msg'>佐藤：研修資料の最新版を共有してください。</div></div><input id='inp' placeholder='新しいメッセージを入力'><button onclick='send()'>送信</button><br><button onclick='reply()'>返信</button><button onclick='file()'>ファイル共有</button><button onclick='meet()'>会議開始</button><div id='meeting'></div></div><div class='side'><h3>体験チェック</h3><div id='checks'></div><div id='cta' class='cta'><b>体験完了です。</b><br>次は実際のTeamsで試してください。<a href='__URL__' target='_blank'>実体験をしてください：Teamsを開く ↗</a><small>__URL__</small></div></div></div></div><script>const done={send:false,reply:false,file:false,meet:false};const labels={send:'チャット送信',reply:'返信',file:'ファイル共有',meet:'会議開始'};function add(t,me=false){document.getElementById('msgs').innerHTML+=`<div class='msg ${me?'me':''}'>${t}</div>`}function mark(k){done[k]=true;update()}function send(){let v=document.getElementById('inp').value||'研修資料を共有します。';add('あなた：'+v,true);mark('send')}function reply(){add('あなた：最新版を確認しました。',true);mark('reply')}function file(){add('あなた：📎 M365研修資料.pptx を共有しました。',true);mark('file')}function meet(){document.getElementById('meeting').innerHTML='<div class=msg>📅 会議を開始しました。参加リンクが作成されました。</div>';mark('meet')}function update(){let n=Object.keys(done).find(k=>!done[k]);document.getElementById('task').textContent=n?'体験：'+labels[n]+'を行ってください。':'体験完了：実体験URLからTeamsを開いてください。';document.getElementById('checks').innerHTML=Object.keys(done).map(k=>`<div class='${done[k]?'done':''}'>${done[k]?'✓':'○'} ${labels[k]}</div>`).join('');if(!n)document.getElementById('cta').style.display='block'}update()</script></body></html>"""
+html = html.replace("__URL__", url)
+components.html(html,height=760,scrolling=True)

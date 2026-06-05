@@ -1,35 +1,11 @@
-from pathlib import Path
 import streamlit as st
-from modules.training import page_header, complete_card
-
+import streamlit.components.v1 as components
+from modules.ui import load_css, page_header
+from modules.urls import M365_URLS
 st.set_page_config(page_title="OneDrive Training", page_icon="☁️", layout="wide")
-st.markdown(f"<style>{Path('assets/style.css').read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
-page_header("☁️", "OneDrive：保存と共有", "ファイルの保存、共有リンク、同期状態を体験します。")
-
-if "onedrive_files" not in st.session_state:
-    st.session_state.onedrive_files = {"研修メモ.docx":"非共有", "売上集計.xlsx":"非共有"}
-if "onedrive_done" not in st.session_state:
-    st.session_state.onedrive_done = False
-
-st.markdown("<div class='m365-card'>", unsafe_allow_html=True)
-new_file = st.text_input("新しいファイル名", "M365操作メモ.docx")
-if st.button("＋ OneDriveに保存"):
-    st.session_state.onedrive_files[new_file] = "保存済み"
-    st.session_state.onedrive_done = True
-
-for name, state in list(st.session_state.onedrive_files.items()):
-    c1, c2, c3, c4 = st.columns([4,2,2,2])
-    c1.write(f"📄 **{name}**")
-    c2.write(state)
-    if c3.button("共有", key=f"share_{name}"):
-        st.session_state.onedrive_files[name] = "指定ユーザーと共有"
-        st.session_state.onedrive_done = True
-        st.rerun()
-    if c4.button("同期済みにする", key=f"sync_{name}"):
-        st.session_state.onedrive_files[name] = "同期済み"
-        st.session_state.onedrive_done = True
-        st.rerun()
-st.markdown("</div>", unsafe_allow_html=True)
-
-if st.session_state.onedrive_done:
-    complete_card("OneDrive")
+load_css(); page_header("OneDrive：保存・共有・同期", "アップロード、共有リンク作成、同期状態確認、復元を体験します。")
+url=M365_URLS['OneDrive']
+html="""
+<html><head><meta charset='utf-8'><style>body{margin:0;font-family:'Segoe UI','Yu Gothic',sans-serif;background:#eef6ff}.app{border:1px solid #c6d7ec;border-radius:20px;background:white;overflow:hidden;box-shadow:0 12px 32px #0002}.top{background:#0078d4;color:white;padding:12px 16px;font-weight:800}.task{background:#eaf4ff;padding:12px 16px;font-weight:800;color:#075985}.body{display:grid;grid-template-columns:1fr 300px;gap:16px;padding:18px}button{border:1px solid #b8cce5;background:#fff;border-radius:9px;padding:9px 11px;margin:4px;font-weight:700;cursor:pointer}.file{display:grid;grid-template-columns:1fr 100px 130px;align-items:center;border-bottom:1px solid #e1e8f0;padding:12px}.head{background:#f7f9fc;font-weight:800}.side{border:1px solid #cbd5e1;border-radius:16px;padding:14px;background:#fff}.done{color:#15803d;font-weight:800}.cta{display:none;background:#ecfdf3;border:1px solid #86efac;border-radius:14px;padding:14px;margin-top:14px}.cta a{display:block;background:#0078d4;color:white;padding:10px;border-radius:10px;text-align:center;text-decoration:none;font-weight:800;margin-top:10px}</style></head><body><div class='app'><div class='top'>OneDrive</div><div class='task' id='task'></div><div class='body'><div><button onclick='upload()'>アップロード</button><button onclick='sync()'>同期状態</button><button onclick='restore()'>復元</button><div class='file head'><span>名前</span><span>状態</span><span>操作</span></div><div id='files'><div class='file'><span>研修資料.docx</span><span>同期済み</span><button onclick='share()'>共有</button></div><div class='file'><span>売上管理.xlsx</span><span>同期済み</span><button onclick='share()'>共有</button></div></div><div id='log'></div></div><div class='side'><h3>体験チェック</h3><div id='checks'></div><div class='cta' id='cta'><b>体験完了です。</b><br>次は実際のOneDriveで試してください。<a href='__URL__' target='_blank'>実体験をしてください：OneDriveを開く ↗</a><small>__URL__</small></div></div></div></div><script>const done={upload:false,share:false,sync:false,restore:false};const labels={upload:'ファイルをアップロード',share:'共有リンクを作成',sync:'同期状態を確認',restore:'バージョンを復元'};function mark(k){done[k]=true;update()}function upload(){document.getElementById('files').innerHTML+='<div class=file><span>新規アップロード.pdf</span><span>処理中</span><button onclick=share()>共有</button></div>';mark('upload')}function share(){document.getElementById('log').innerHTML='<p>🔗 共有リンクを作成しました：組織内のユーザーが表示可能</p>';mark('share')}function sync(){document.getElementById('log').innerHTML='<p>✅ すべてのファイルがクラウドと同期済みです。</p>';mark('sync')}function restore(){document.getElementById('log').innerHTML='<p>↩ 1つ前のバージョンを復元しました。</p>';mark('restore')}function update(){let n=Object.keys(done).find(k=>!done[k]);document.getElementById('task').textContent=n?'体験：'+labels[n]+'してください。':'体験完了：実体験URLからOneDriveを開いてください。';document.getElementById('checks').innerHTML=Object.keys(done).map(k=>`<div class='${done[k]?'done':''}'>${done[k]?'✓':'○'} ${labels[k]}</div>`).join('');if(!n)document.getElementById('cta').style.display='block'}update()</script></body></html>"""
+html = html.replace("__URL__", url)
+components.html(html,height=700,scrolling=True)

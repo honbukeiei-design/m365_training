@@ -1,9 +1,9 @@
-REAL_URLS = {
-    "Word": "https://word.cloud.microsoft/",
+M365_URLS = {
+    "Word": "https://word.cloud.microsoft/ja-jp/",
     "Excel": "https://excel.cloud.microsoft/ja-jp/",
-    "Teams": "https://teams.microsoft.com/",
-    "OneDrive": "https://onedrive.live.com/about/ja-jp/signin/",
-    "SharePoint": "https://www.microsoft365.com/launch/sharepoint",
+    "Teams": "https://www.microsoft.com/ja-jp/microsoft-teams/log-in",
+    "OneDrive": "https://onedrive.live.com/",
+    "SharePoint": "https://www.microsoft.com/ja-jp/microsoft-365/sharepoint/collaboration",
     "Copilot": "https://copilot.microsoft.com/",
     "Microsoft 365": "https://www.office.com/",
 }

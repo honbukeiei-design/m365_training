@@ -1,21 +1,31 @@
 import os
-from openai import OpenAI
 
-SYSTEM_PROMPT = "あなたはMicrosoft 365研修用のCopilot風アシスタントです。短く、実務的に答えてください。"
+try:
+    from openai import OpenAI
+except Exception:  # pragma: no cover
+    OpenAI = None
+
 
 def ask_copilot(prompt: str) -> str:
+    """Optional AI demo. Falls back to a deterministic response when no API key is set."""
     if not prompt.strip():
-        return "依頼内容を入力してください。"
+        return "まずは、やりたい作業を1文で入力してください。"
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        if "要約" in prompt:
-            return "【デモ応答】要点を3つに整理しました。1. 目的 2. 変更点 3. 次の対応、の順で共有すると伝わりやすくなります。"
-        if "メール" in prompt:
-            return "【デモ応答】件名：M365移行後の運用について\n本文：関係者各位\nM365移行後はOneDriveとSharePointを活用し、最新版ファイルを共有します。"
-        return "【デモ応答】依頼内容を整理し、実務で使いやすい形に変換しました。"
-    client = OpenAI(api_key=api_key)
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role":"system","content":SYSTEM_PROMPT},{"role":"user","content":prompt}],
+    if api_key and OpenAI:
+        try:
+            client = OpenAI(api_key=api_key)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "あなたはMicrosoft 365研修用のアシスタントです。操作手順を短く説明してください。"},
+                    {"role": "user", "content": prompt},
+                ],
+            )
+            return response.choices[0].message.content or "回答を生成できませんでした。"
+        except Exception:
+            pass
+    return (
+        "研修用デモ応答：\n\n"
+        f"依頼内容「{prompt}」に対して、まず目的を1行で整理し、次に作業手順を3つに分けます。\n"
+        "1. 対象ファイルを開く\n2. 必要な箇所を編集・共有する\n3. 保存状態と共有先を確認する"
     )
-    return response.choices[0].message.content

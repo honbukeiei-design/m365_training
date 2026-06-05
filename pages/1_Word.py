@@ -1,75 +1,89 @@
-from pathlib import Path
 import streamlit as st
 import streamlit.components.v1 as components
-from modules.training import page_header
+from modules.ui import load_css, page_header
+from modules.urls import M365_URLS
 
 st.set_page_config(page_title="Word Training", page_icon="📄", layout="wide")
-st.markdown(f"<style>{Path('assets/style.css').read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
-page_header("📄", "Word：文書作成とクラウド保存", "リボンを切り替え、白紙ページ上で直接編集します。太字・下線・箇条書き・コメント・共有が画面に反映されます。")
+load_css()
+page_header("Word：文書作成とクラウド保存", "画面上部の指示に沿って、リボン・書式・コメント・共有・保存を順に体験します。")
 
-word_html = r'''
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8" />
-<style>
-*{box-sizing:border-box} body{margin:0;font-family:"Segoe UI",system-ui,"Yu Gothic",sans-serif;background:#f3f2f1;color:#242424}.word-shell{border:1px solid #c8c6c4;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 12px 30px rgba(0,0,0,.10)}.titlebar{height:42px;background:#2b579a;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px}.title-left{display:flex;align-items:center;gap:10px;font-weight:700}.file-name{font-size:14px;opacity:.95}.window-controls span{display:inline-flex;width:34px;height:26px;align-items:center;justify-content:center;border-radius:4px}.window-controls span:hover{background:rgba(255,255,255,.16)}.top-row{background:#fbfbfb;border-bottom:1px solid #d0d0d0;padding:8px 12px;display:flex;gap:8px;align-items:center}.quick{border:1px solid transparent;background:transparent;padding:6px 9px;border-radius:4px;cursor:pointer}.quick:hover{background:#edf3ff;border-color:#c7d7f5}.tabs{display:flex;gap:2px;background:#fff;border-bottom:1px solid #d0d0d0;padding:0 10px}.tab{border:0;background:transparent;padding:11px 16px 10px;cursor:pointer;font-weight:600;color:#323130;border-bottom:3px solid transparent}.tab:hover{background:#f3f2f1}.tab.active{color:#2b579a;border-bottom-color:#2b579a}.ribbon{background:#fdfdfd;border-bottom:1px solid #d0d0d0;min-height:110px;padding:10px 12px;display:flex;gap:10px;align-items:stretch;overflow:auto}.group{border-right:1px solid #e1dfdd;padding:0 12px 20px 0;min-width:125px;position:relative;display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap}.group-label{position:absolute;bottom:0;left:0;right:12px;text-align:center;color:#605e5c;font-size:11px}.cmd{border:1px solid #d0d0d0;background:#fff;border-radius:5px;min-width:42px;height:38px;padding:4px 8px;cursor:pointer;font-weight:600}.cmd:hover{background:#edf3ff;border-color:#8ab4f8}.cmd.active{background:#deecff;border-color:#2b579a;color:#2b579a}.cmd.big{width:68px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px}.cmd.big b{font-size:19px}.fontselect,.sizeselect{height:36px;border:1px solid #d0d0d0;border-radius:5px;background:white;padding:0 8px}.workspace{display:grid;grid-template-columns:1fr 300px;background:#f3f2f1;min-height:690px}.canvas-wrap{padding:34px 24px 60px;overflow:auto}.page{width:794px;min-height:1010px;margin:0 auto;background:white;border:1px solid #d0d0d0;box-shadow:0 4px 16px rgba(0,0,0,.18);padding:72px 82px;line-height:1.8;font-size:16px;outline:0}.page:focus{box-shadow:0 4px 18px rgba(43,87,154,.35)}.statusbar{height:30px;background:#f8f8f8;border-top:1px solid #d0d0d0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;color:#605e5c;font-size:12px}.side{border-left:1px solid #d0d0d0;background:#faf9f8;padding:16px}.panel{background:#fff;border:1px solid #e1dfdd;border-radius:10px;padding:14px;margin-bottom:12px}.panel h3{margin:0 0 10px;font-size:16px}.badge{display:inline-flex;border-radius:999px;padding:4px 9px;background:#fff4ce;color:#8a4b00;font-weight:700;font-size:12px}.saved{background:#dff6dd;color:#107c10}.share-row{display:flex;align-items:center;justify-content:space-between;padding:8px;border-bottom:1px solid #f0f0f0}.comment{background:#fff4ce;border-bottom:2px solid #c19c00}.toast{position:fixed;right:24px;bottom:24px;background:#323130;color:#fff;padding:12px 16px;border-radius:8px;opacity:0;transform:translateY(10px);transition:.25s}.toast.show{opacity:1;transform:translateY(0)}.real-use{display:none;background:#e7f0ff;border:1px solid #b4d2ff;border-radius:12px;padding:14px;margin-top:12px}.real-use.show{display:block}.real-use a{display:inline-block;margin-top:8px;background:#2564cf;color:white;text-decoration:none;border-radius:8px;padding:9px 12px;font-weight:700}.hidden{display:none!important}
-</style>
-</head>
-<body>
-<div class="word-shell">
-  <div class="titlebar"><div class="title-left"><span>📄 Word</span><span class="file-name" id="fileName">M365移行後のファイル保存ルール.docx</span></div><div class="window-controls"><span>—</span><span>□</span><span>×</span></div></div>
-  <div class="top-row"><button class="quick" onclick="saveDoc()">💾 保存</button><button class="quick" onclick="undoCmd()">↶ 元に戻す</button><button class="quick" onclick="redoCmd()">↷ やり直し</button><span style="color:#605e5c;margin-left:auto" id="syncText">未保存の変更</span></div>
-  <div class="tabs" id="tabs">
-    <button class="tab active" data-tab="home">ホーム</button><button class="tab" data-tab="insert">挿入</button><button class="tab" data-tab="layout">レイアウト</button><button class="tab" data-tab="design">デザイン</button><button class="tab" data-tab="review">校閲</button><button class="tab" data-tab="view">表示</button><button class="tab" data-tab="mail">差し込み文書</button>
-  </div>
-  <div class="ribbon" id="ribbon"></div>
-  <div class="workspace">
-    <div class="canvas-wrap">
-      <div id="page" class="page" contenteditable="true" spellcheck="false">
-        <h1>Microsoft 365移行後のファイル保存ルール</h1>
-        <p>旧Officeでは個人PCや共有フォルダーに保存していました。</p>
-        <p>Microsoft 365移行後は、OneDriveとSharePointを使い分け、Teamsから関係者へ共有します。</p>
-        <p>この白紙ページに自由に入力し、リボンから太字、下線、箇条書き、スタイル、コメント、共有を試してください。</p>
-      </div>
+word_url = M365_URLS["Word"]
+html = f"""
+<!doctype html><html lang='ja'><head><meta charset='utf-8'><style>
+:root{{--blue:#185abd;--line:#c9d6e8;--bg:#e9edf5;--ribbon:#f7f9fc;--text:#1f2430;--muted:#697586;}}
+*{{box-sizing:border-box}} body{{margin:0;font-family:'Segoe UI','Yu Gothic',Meiryo,sans-serif;background:linear-gradient(180deg,#e9eef7,#f7f8fb);color:var(--text)}}
+.shell{{border:1px solid #c9d6e8;border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 14px 38px rgba(22,36,70,.12)}}
+.topbar{{height:42px;background:#174a7c;color:#fff;display:flex;align-items:center;gap:14px;padding:0 16px;font-size:14px}}
+.logo{{font-weight:800;background:#0f6cbd;padding:6px 10px;border-radius:8px}} .docname{{font-weight:700}} .status{{margin-left:auto;opacity:.9}}
+.taskbar{{background:#fff8e6;border-bottom:1px solid #ecd9a6;padding:14px 16px;display:flex;align-items:center;gap:14px}}
+.tasktext{{font-weight:800;color:#684900}} .meter{{flex:1;height:10px;background:#eadfbf;border-radius:999px;overflow:hidden}} .meter span{{display:block;height:100%;width:0;background:#f59e0b;transition:.25s}}
+.tabs{{display:flex;gap:4px;background:#f6f8fb;border-bottom:1px solid var(--line);padding:8px 12px 0}}
+.tab{{border:0;background:transparent;padding:10px 16px;border-radius:8px 8px 0 0;font-weight:700;color:#26374f;cursor:pointer}}
+.tab.active{{background:#fff;border:1px solid var(--line);border-bottom-color:#fff;color:#0f5db8}}
+.ribbon{{min-height:88px;background:#fff;border-bottom:1px solid var(--line);padding:12px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}}
+.group{{border-right:1px solid #d6dfec;padding-right:12px;margin-right:2px;min-height:58px}} .gtitle{{font-size:11px;color:#6b7280;text-align:center;margin-top:4px}}
+.btn{{border:1px solid #c9d6e8;background:linear-gradient(#fff,#f1f5fb);border-radius:8px;padding:8px 10px;margin:2px;cursor:pointer;font-weight:650;box-shadow:0 1px 0 #fff inset}}
+.btn:hover{{background:#eaf2ff;border-color:#78a7e8}} select,.miniinput{{border:1px solid #c9d6e8;border-radius:8px;padding:8px;background:white;margin:2px}}
+.workspace{{display:grid;grid-template-columns:1fr 300px;gap:18px;padding:22px;background:#e9edf5}}
+.pagewrap{{display:flex;justify-content:center;align-items:flex-start;min-height:780px}}
+.page{{width:794px;min-height:1000px;background:white;border:1px solid #c7cfdb;box-shadow:0 10px 28px rgba(24,35,55,.18);padding:76px 82px;outline:none;line-height:1.8;font-size:16px;position:relative}}
+.page:focus{{box-shadow:0 0 0 3px rgba(37,99,235,.18),0 10px 28px rgba(24,35,55,.18)}}
+.page h1{{font-size:28px;margin:0 0 18px;color:#1d2738}} .page h2{{font-size:22px;color:#185abd;margin-top:24px}}
+.panel{{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 8px 20px rgba(40,56,90,.08)}} .panel h3{{margin:0 0 10px;font-size:18px}}
+.check{{display:flex;gap:8px;align-items:center;margin:9px 0;color:#475467}} .dot{{width:20px;height:20px;border:1px solid #c9d6e8;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px}}
+.check.done .dot{{background:#1a7f37;color:white;border-color:#1a7f37}} .check.done{{color:#1a7f37;font-weight:700}}
+.cta{{display:none;background:#ecfdf3;border:1px solid #86efac;border-radius:14px;padding:14px;margin-top:14px}} .cta a{{display:block;text-align:center;background:#185abd;color:#fff;text-decoration:none;border-radius:10px;padding:10px;margin-top:10px;font-weight:800}}
+.savechip{{display:inline-block;background:#e7f5ea;color:#166534;border-radius:999px;padding:5px 10px;font-weight:800}} .comment{{background:#fff3cd;border-bottom:2px solid #facc15}}
+.small{{font-size:12px;color:#697586}} .modal{{display:none;position:fixed;right:36px;top:210px;width:320px;background:#fff;border:1px solid #c9d6e8;border-radius:16px;box-shadow:0 18px 45px rgba(13,30,60,.25);padding:16px;z-index:5}}
+</style></head><body>
+<div class='shell'>
+  <div class='topbar'><div class='logo'>W</div><div class='docname'>M365移行後の保存ルール.docx</div><div class='status' id='saveStatus'>未保存の変更</div></div>
+  <div class='taskbar'><div class='tasktext' id='taskText'>体験 1/6：ホームタブで「太字」「下線」「箇条書き」を使ってください。</div><div class='meter'><span id='meter'></span></div></div>
+  <div class='tabs' id='tabs'></div>
+  <div class='ribbon' id='ribbon'></div>
+  <div class='workspace'>
+    <div class='pagewrap'><div class='page' contenteditable='true' id='doc'>
+      <h1>M365移行後のファイル保存ルール</h1>
+      <p>旧Officeでは個人PCや共有フォルダーに保存していました。Microsoft 365移行後は、OneDriveとSharePointを使い分け、Teamsから関係者へ共有します。</p>
+      <h2>基本ルール</h2>
+      <p>個人作業中の資料はOneDrive、チームで共有する正式資料はSharePointに保存します。</p>
+      <p>この白紙ページ内をクリックして自由に編集できます。文字を選択してから太字や下線を押すと、選択範囲に反映されます。</p>
+    </div></div>
+    <div class='panel'><h3>体験チェック</h3>
+      <div class='check' data-k='home'><span class='dot'>1</span>ホームの書式を使う</div>
+      <div class='check' data-k='insert'><span class='dot'>2</span>挿入タブで表かリンクを追加</div>
+      <div class='check' data-k='layout'><span class='dot'>3</span>レイアウトを変更</div>
+      <div class='check' data-k='review'><span class='dot'>4</span>コメントを追加</div>
+      <div class='check' data-k='share'><span class='dot'>5</span>共有範囲を確認</div>
+      <div class='check' data-k='save'><span class='dot'>6</span>クラウド保存する</div>
+      <div class='cta' id='cta'><b>体験完了です。</b><br>次は実際のWord for the webで同じ操作を試してください。<a href='{word_url}' target='_blank'>実体験をしてください：Wordを開く ↗</a><div class='small'>{word_url}</div></div>
     </div>
-    <aside class="side">
-      <div class="panel"><h3>ファイル状態</h3><span id="saveBadge" class="badge">未保存の変更</span><p style="font-size:13px;color:#605e5c">保存先：OneDrive - 個人</p></div>
-      <div class="panel"><h3>共有</h3><div id="shareList"><div class="share-row"><span>自分のみ</span><span>🔒</span></div></div></div>
-      <div class="panel"><h3>コメント</h3><div id="comments" style="font-size:13px;color:#605e5c">コメントはまだありません。</div></div>
-      <div class="panel"><h3>操作ログ</h3><div id="log" style="font-size:13px;color:#605e5c">リボン操作を試してください。</div></div>
-      <div id="realUse" class="real-use"><b>実際に使用してみよう</b><br><span>Word Onlineを開いて、同じ操作を本番環境で試せます。</span><br><a target="_blank" href="https://www.microsoft365.com/launch/word">実際のURLを開く</a></div>
-    </aside>
   </div>
-  <div class="statusbar"><span id="status">1ページ　日本語</span><span>ズーム 100%</span></div>
-</div><div class="toast" id="toast"></div>
+</div>
+<div class='modal' id='shareModal'><h3>共有</h3><p>共有範囲を選択しました。</p><button class='btn' onclick='closeShare()'>閉じる</button></div>
 <script>
-const page=document.getElementById('page');const ribbon=document.getElementById('ribbon');const log=document.getElementById('log');const toast=document.getElementById('toast');
-function focusPage(){page.focus();}
-function note(t){log.innerHTML='✓ '+t+'<br><span style="color:#8a8886">'+new Date().toLocaleTimeString('ja-JP')+'</span>';toast.textContent=t;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1400);document.getElementById('syncText').textContent='未保存の変更';document.getElementById('saveBadge').textContent='未保存の変更';document.getElementById('saveBadge').className='badge';}
-function cmd(c,v=null){focusPage();document.execCommand(c,false,v);note('文書に「'+c+'」を反映しました');}
-function saveDoc(){document.getElementById('syncText').textContent='OneDriveに保存済み';document.getElementById('saveBadge').textContent='保存済み';document.getElementById('saveBadge').className='badge saved';document.getElementById('realUse').classList.add('show');note('OneDriveに保存しました');}
-function undoCmd(){cmd('undo')} function redoCmd(){cmd('redo')}
-function setStyle(type){focusPage(); if(type==='title')document.execCommand('formatBlock',false,'H1'); if(type==='heading')document.execCommand('formatBlock',false,'H2'); if(type==='normal')document.execCommand('formatBlock',false,'P'); note('スタイルを適用しました');}
-function addComment(){focusPage();let sel=window.getSelection();if(!sel.rangeCount || sel.toString()===''){note('コメントする文字列を選択してください');return;}let range=sel.getRangeAt(0);let span=document.createElement('span');span.className='comment';span.title='コメント: 共有前に表現を確認';range.surroundContents(span);document.getElementById('comments').innerHTML='<b>コメント1</b><br>「'+span.textContent+'」にコメントを追加しました。';note('コメントを追加しました');}
-function shareDoc(){document.getElementById('shareList').innerHTML='<div class="share-row"><span>長野 太郎</span><span>編集可</span></div><div class="share-row"><span>組織内リンク</span><span>閲覧可</span></div>';document.getElementById('realUse').classList.add('show');note('共有設定を反映しました');}
-function insertTable(){focusPage();document.execCommand('insertHTML',false,'<table border="1" style="border-collapse:collapse;width:100%;margin:12px 0"><tr><th>項目</th><th>保存先</th><th>共有方法</th></tr><tr><td>個人作業</td><td>OneDrive</td><td>指定ユーザー</td></tr><tr><td>チーム資料</td><td>SharePoint</td><td>Teams</td></tr></table>');note('表を挿入しました');}
-function insertLink(){focusPage();document.execCommand('createLink',false,'https://www.microsoft365.com/');note('リンクを設定しました');}
-function pageColor(c){page.style.background=c;note('ページ背景を変更しました');}
-function setMargins(px){page.style.padding=px+'px';note('余白を変更しました');}
-function setZoom(z){page.style.transform='scale('+z+')';page.style.transformOrigin='top center';document.getElementById('status').textContent='1ページ　ズーム '+Math.round(z*100)+'%';note('表示倍率を変更しました');}
-function ribbonHome(){ribbon.innerHTML='<div class="group"><select class="fontselect" onchange="cmd(\'fontName\',this.value)"><option>Yu Gothic</option><option>Meiryo</option><option>MS Mincho</option></select><select class="sizeselect" onchange="cmd(\'fontSize\',this.value)"><option value="3">11</option><option value="4">14</option><option value="5">18</option><option value="6">24</option></select><button class="cmd" onclick="cmd(\'bold\')"><b>B</b></button><button class="cmd" onclick="cmd(\'underline\')"><u>U</u></button><button class="cmd" onclick="cmd(\'foreColor\',\'#c00000\')">A赤</button><div class="group-label">フォント</div></div><div class="group"><button class="cmd" onclick="cmd(\'insertUnorderedList\')">箇条書き</button><button class="cmd" onclick="cmd(\'justifyLeft\')">左</button><button class="cmd" onclick="cmd(\'justifyCenter\')">中央</button><button class="cmd" onclick="cmd(\'justifyRight\')">右</button><div class="group-label">段落</div></div><div class="group"><button class="cmd big" onclick="setStyle(\'title\')"><b>表題</b>タイトル</button><button class="cmd big" onclick="setStyle(\'heading\')"><b>見出し</b>H2</button><button class="cmd big" onclick="setStyle(\'normal\')"><b>標準</b>本文</button><div class="group-label">スタイル</div></div><div class="group"><button class="cmd big" onclick="addComment()"><b>💬</b>コメント</button><button class="cmd big" onclick="shareDoc()"><b>↗</b>共有</button><div class="group-label">共同作業</div></div>';}
-function ribbonInsert(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="insertTable()"><b>▦</b>表</button><button class="cmd big" onclick="document.execCommand(\'insertHorizontalRule\');note(\'区切り線を挿入しました\')"><b>—</b>区切り</button><button class="cmd big" onclick="document.execCommand(\'insertHTML\',false,\'<p>📌 アイコン付きメモ</p>\');note(\'アイコンを挿入しました\')"><b>📌</b>アイコン</button><button class="cmd big" onclick="insertLink()"><b>🔗</b>リンク</button><div class="group-label">挿入</div></div>';}
-function ribbonLayout(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="setMargins(54)"><b>狭い</b>余白</button><button class="cmd big" onclick="setMargins(82)"><b>標準</b>余白</button><button class="cmd big" onclick="setMargins(110)"><b>広い</b>余白</button><div class="group-label">ページ設定</div></div><div class="group"><button class="cmd" onclick="cmd(\'justifyLeft\')">左揃え</button><button class="cmd" onclick="cmd(\'justifyFull\')">両端揃え</button><div class="group-label">配置</div></div>';}
-function ribbonDesign(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="pageColor(\'#ffffff\')"><b>白</b>標準</button><button class="cmd big" onclick="pageColor(\'#fbf7ef\')"><b>淡黄</b>背景</button><button class="cmd big" onclick="pageColor(\'#f6fbff\')"><b>淡青</b>背景</button><button class="cmd big" onclick="page.style.border=\'2px solid #2b579a\';note(\'ページ罫線を設定しました\')"><b>□</b>罫線</button><div class="group-label">文書の書式設定</div></div>';}
-function ribbonReview(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="addComment()"><b>💬</b>コメント</button><button class="cmd big" onclick="document.execCommand(\'strikeThrough\');note(\'修正履歴風の取り消し線を反映しました\')"><b>S</b>変更</button><button class="cmd big" onclick="shareDoc()"><b>↗</b>共有</button><div class="group-label">校閲</div></div>';}
-function ribbonView(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="setZoom(0.85)"><b>85%</b>縮小</button><button class="cmd big" onclick="setZoom(1)"><b>100%</b>標準</button><button class="cmd big" onclick="setZoom(1.15)"><b>115%</b>拡大</button><div class="group-label">表示</div></div>';}
-function ribbonMail(){ribbon.innerHTML='<div class="group"><button class="cmd big" onclick="document.execCommand(\'insertHTML\',false,\'<p>差し込み項目：«氏名» 様</p>\');note(\'差し込みフィールドを挿入しました\')"><b>«»</b>差し込み</button><button class="cmd big" onclick="document.execCommand(\'insertHTML\',false,\'<p>宛先リスト：部署別送付先</p>\');note(\'宛先リストを設定しました\')"><b>📇</b>宛先</button><div class="group-label">差し込み文書</div></div>';}
-const maps={home:ribbonHome,insert:ribbonInsert,layout:ribbonLayout,design:ribbonDesign,review:ribbonReview,view:ribbonView,mail:ribbonMail};
-document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');maps[b.dataset.tab]();note('「'+b.textContent+'」タブを表示しました');}));
-page.addEventListener('input',()=>{document.getElementById('syncText').textContent='未保存の変更';document.getElementById('saveBadge').textContent='未保存の変更';document.getElementById('saveBadge').className='badge';});
-ribbonHome();
-</script>
-</body></html>
-'''
-components.html(word_html, height=1000, scrolling=True)
+const tabs=['ホーム','挿入','レイアウト','デザイン','校閲','表示','差し込み文書'];
+const done={{home:false,insert:false,layout:false,review:false,share:false,save:false}}; let active='ホーム';
+const taskMap=[['home','体験 1/6：ホームタブで「太字」「下線」「箇条書き」を使ってください。'],['insert','体験 2/6：挿入タブで表またはリンクを追加してください。'],['layout','体験 3/6：レイアウトタブで余白や段組みを変更してください。'],['review','体験 4/6：校閲タブでコメントを追加してください。'],['share','体験 5/6：共有ボタンで共有範囲を確認してください。'],['save','体験 6/6：保存ボタンでクラウド保存を完了してください。']];
+function mark(k){{done[k]=true;updateProgress();}}
+function updateProgress(){{let n=Object.values(done).filter(Boolean).length; document.getElementById('meter').style.width=(n/6*100)+'%'; document.querySelectorAll('.check').forEach(c=>{{if(done[c.dataset.k])c.classList.add('done')}}); let next=taskMap.find(x=>!done[x[0]]); document.getElementById('taskText').textContent=next?next[1]:'体験完了：実体験URLから本物のWordを開いてください。'; if(n===6)document.getElementById('cta').style.display='block';}}
+function cmd(c,v=null){{document.getElementById('doc').focus(); document.execCommand(c,false,v); mark('home');}}
+function insertHTML(h){{document.getElementById('doc').focus(); document.execCommand('insertHTML',false,h); mark('insert');}}
+function setTab(t){{active=t;drawTabs();drawRibbon();}}
+function drawTabs(){{document.getElementById('tabs').innerHTML=tabs.map(t=>`<button class='tab ${{t===active?'active':''}}' onclick="setTab('${{t}}')">${{t}}</button>`).join('');}}
+function drawRibbon(){{let r='';
+ if(active==='ホーム') r=`<div class='group'><button class='btn' onclick="cmd('bold')"><b>B 太字</b></button><button class='btn' onclick="cmd('underline')"><u>U 下線</u></button><button class='btn' onclick="cmd('insertUnorderedList')">箇条書き</button><div class='gtitle'>フォント</div></div><div class='group'><select onchange="cmd('formatBlock',this.value)"><option value='p'>標準</option><option value='h1'>見出し1</option><option value='h2'>見出し2</option></select><button class='btn' onclick="cmd('justifyLeft')">左揃え</button><button class='btn' onclick="cmd('justifyCenter')">中央</button><div class='gtitle'>スタイル</div></div>`;
+ if(active==='挿入') r=`<div class='group'><button class='btn' onclick="insertHTML('<table border=1 style=\\'border-collapse:collapse;width:100%;margin:12px 0\\'><tr><th>項目</th><th>保存先</th></tr><tr><td>個人作業</td><td>OneDrive</td></tr><tr><td>共有資料</td><td>SharePoint</td></tr></table>')">表</button><button class='btn' onclick="insertHTML('<a href=\\'{word_url}\\' target=\\'_blank\\'>Word for the web</a>')">リンク</button><button class='btn' onclick="insertHTML('<hr>')">区切り線</button><div class='gtitle'>挿入</div></div>`;
+ if(active==='レイアウト') r=`<div class='group'><button class='btn' onclick="document.getElementById('doc').style.padding='58px 64px';mark('layout')">余白：狭い</button><button class='btn' onclick="document.getElementById('doc').style.padding='86px 96px';mark('layout')">余白：広い</button><button class='btn' onclick="document.getElementById('doc').style.columnCount=2;mark('layout')">2段組み</button><button class='btn' onclick="document.getElementById('doc').style.columnCount=1;mark('layout')">1段組み</button><div class='gtitle'>ページ設定</div></div>`;
+ if(active==='デザイン') r=`<div class='group'><button class='btn' onclick="document.getElementById('doc').style.background='#fffef7';mark('layout')">ページ色</button><button class='btn' onclick="document.getElementById('doc').style.border='4px double #8aa6ca';mark('layout')">ページ罫線</button><button class='btn' onclick="document.getElementById('doc').style.fontFamily='Meiryo, sans-serif';mark('layout')">テーマ</button><div class='gtitle'>文書の書式設定</div></div>`;
+ if(active==='校閲') r=`<div class='group'><button class='btn' onclick="document.getElementById('doc').focus();document.execCommand('insertHTML',false,'<span class=comment>コメント: 保存先を確認</span>');mark('review')">コメント</button><button class='btn' onclick="insertHTML('<p><b>変更履歴:</b> 保存先ルールを追記しました。</p>');mark('review')">変更履歴</button><div class='gtitle'>校閲</div></div>`;
+ if(active==='表示') r=`<div class='group'><button class='btn' onclick="document.getElementById('doc').style.transform='scale(.9)';document.getElementById('doc').style.transformOrigin='top center'">90%</button><button class='btn' onclick="document.getElementById('doc').style.transform='scale(1)'">100%</button><button class='btn' onclick="document.getElementById('doc').style.transform='scale(1.1)';document.getElementById('doc').style.transformOrigin='top center'">110%</button><div class='gtitle'>ズーム</div></div>`;
+ if(active==='差し込み文書') r=`<div class='group'><button class='btn' onclick="insertHTML('<p>宛先: 部署別研修対象者</p>')">宛先選択</button><button class='btn' onclick="insertHTML('<p>差し込みフィールド: {{部署名}}</p>')">フィールド挿入</button><div class='gtitle'>差し込み</div></div>`;
+ r += `<div class='group'><button class='btn' onclick='share()'>共有</button><button class='btn' onclick='save()'>保存</button><div class='gtitle'>クラウド</div></div>`; document.getElementById('ribbon').innerHTML=r;}}
+function share(){{mark('share');document.getElementById('shareModal').style.display='block';}}
+function closeShare(){{document.getElementById('shareModal').style.display='none';}}
+function save(){{mark('save');document.getElementById('saveStatus').innerHTML='<span class=savechip>OneDriveに保存済み</span>';}}
+drawTabs();drawRibbon();updateProgress();
+</script></body></html>
+"""
+components.html(html, height=1120, scrolling=True)

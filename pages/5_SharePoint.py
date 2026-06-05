@@ -1,31 +1,11 @@
-from pathlib import Path
 import streamlit as st
-from modules.training import page_header, complete_card
-
+import streamlit.components.v1 as components
+from modules.ui import load_css, page_header
+from modules.urls import M365_URLS
 st.set_page_config(page_title="SharePoint Training", page_icon="📁", layout="wide")
-st.markdown(f"<style>{Path('assets/style.css').read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
-page_header("📁", "SharePoint：チーム文書管理", "サイト、ドキュメントライブラリ、権限、ニュース投稿を体験します。")
-
-if "sp_done" not in st.session_state:
-    st.session_state.sp_done = False
-site = st.selectbox("サイト", ["M365移行チーム", "総務部", "情報システム"])
-st.markdown("<div class='m365-card'>", unsafe_allow_html=True)
-st.subheader(f"{site} / ドキュメント")
-cols = st.columns(4)
-if cols[0].button("📁 ライブラリ作成", use_container_width=True):
-    st.success("『研修資料』ライブラリを作成しました。")
-    st.session_state.sp_done = True
-if cols[1].button("🔐 権限設定", use_container_width=True):
-    st.info("メンバー：編集可、閲覧者：閲覧のみ に設定しました。")
-    st.session_state.sp_done = True
-if cols[2].button("📰 ニュース投稿", use_container_width=True):
-    st.success("『M365移行のお知らせ』を投稿しました。")
-    st.session_state.sp_done = True
-if cols[3].button("🔗 Teams連携", use_container_width=True):
-    st.info("Teamsチャネルのファイルタブと連携しました。")
-    st.session_state.sp_done = True
-st.table({"ファイル":["移行手順書.docx","FAQ.xlsx","研修動画リンク.url"],"状態":["公開中","編集中","公開中"],"権限":["組織内閲覧","メンバー編集","組織内閲覧"]})
-st.markdown("</div>", unsafe_allow_html=True)
-
-if st.session_state.sp_done:
-    complete_card("SharePoint")
+load_css(); page_header("SharePoint：チームサイトとドキュメント管理", "サイト選択、ドキュメント登録、権限確認、ニュース投稿を体験します。")
+url=M365_URLS['SharePoint']
+html="""
+<html><head><meta charset='utf-8'><style>body{margin:0;font-family:'Segoe UI','Yu Gothic',sans-serif;background:#eef7f7}.app{border:1px solid #c6dddd;border-radius:20px;background:white;overflow:hidden;box-shadow:0 12px 32px #0002}.top{background:#038387;color:white;padding:12px 16px;font-weight:800}.task{background:#e6fffb;color:#115e59;padding:12px 16px;font-weight:800}.body{display:grid;grid-template-columns:240px 1fr 300px;min-height:620px}.nav{background:#f3fbfb;border-right:1px solid #c6dddd;padding:12px}.main{padding:16px}.side{background:#fbffff;border-left:1px solid #c6dddd;padding:14px}.tile,.doc{border:1px solid #d7e7e7;border-radius:12px;background:white;padding:12px;margin:8px 0}button{border:1px solid #a9d5d5;background:white;border-radius:9px;padding:9px 11px;margin:4px;font-weight:700;cursor:pointer}.done{color:#15803d;font-weight:800}.cta{display:none;background:#ecfdf3;border:1px solid #86efac;border-radius:14px;padding:14px;margin-top:14px}.cta a{display:block;background:#038387;color:white;padding:10px;border-radius:10px;text-align:center;text-decoration:none;font-weight:800;margin-top:10px}</style></head><body><div class='app'><div class='top'>SharePoint</div><div class='task' id='task'></div><div class='body'><div class='nav'><b>サイト</b><div class='tile' onclick='site()'>M365移行PJ</div><div class='tile'>経営企画</div><div class='tile'>研修ポータル</div></div><div class='main'><h2 id='siteTitle'>M365移行PJ</h2><button onclick='upload()'>ドキュメント追加</button><button onclick='permission()'>権限確認</button><button onclick='news()'>ニュース投稿</button><button onclick='library()'>ライブラリ表示</button><div id='docs'><div class='doc'>📄 移行計画.docx　<span>閲覧: メンバー</span></div><div class='doc'>📊 進捗管理.xlsx　<span>編集: 所有者</span></div></div><div id='log'></div></div><div class='side'><h3>体験チェック</h3><div id='checks'></div><div id='cta' class='cta'><b>体験完了です。</b><br>次は実際のSharePointで試してください。<a href='__URL__' target='_blank'>実体験をしてください：SharePointを開く ↗</a><small>__URL__</small></div></div></div></div><script>const done={site:false,upload:false,permission:false,news:false};const labels={site:'サイトを選択',upload:'ドキュメントを追加',permission:'権限を確認',news:'ニュースを投稿'};function mark(k){done[k]=true;update()}function site(){document.getElementById('siteTitle').textContent='M365移行PJ';mark('site')}function upload(){document.getElementById('docs').innerHTML+='<div class=doc>📄 研修FAQ.docx　<span>新規追加</span></div>';mark('upload')}function permission(){document.getElementById('log').innerHTML='<p>🔐 メンバーは編集、閲覧者は表示のみです。</p>';mark('permission')}function news(){document.getElementById('log').innerHTML='<p>📰 ニュース「M365研修を開始します」を投稿しました。</p>';mark('news')}function library(){mark('site')}function update(){let n=Object.keys(done).find(k=>!done[k]);document.getElementById('task').textContent=n?'体験：'+labels[n]+'してください。':'体験完了：実体験URLからSharePointを開いてください。';document.getElementById('checks').innerHTML=Object.keys(done).map(k=>`<div class='${done[k]?'done':''}'>${done[k]?'✓':'○'} ${labels[k]}</div>`).join('');if(!n)document.getElementById('cta').style.display='block'}update()</script></body></html>"""
+html = html.replace("__URL__", url)
+components.html(html,height=760,scrolling=True)
