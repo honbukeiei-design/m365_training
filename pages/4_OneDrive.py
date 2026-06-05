@@ -1,23 +1,29 @@
 import streamlit as st
-from modules.ui import load_css, top_bar, page_title, training_bar, complete_task, reset, tabs, ribbon_start, ribbon_end
-SERVICE="OneDrive"
-TASKS=[{"id":"upload","label":"ファイルをアップロードしてください。"},{"id":"share","label":"共有リンクを作成してください。"},{"id":"sync","label":"同期状態を確認してください。"},{"id":"restore","label":"バージョン履歴から復元してください。"}]
-TABS=["ホーム","自分のファイル","共有","同期","履歴"]
-st.set_page_config(page_title="OneDrive 体験",layout="wide"); load_css(); top_bar("OneDrive"); page_title("OneDrive","個人ファイルの保存、共有、同期、復元を体験します。"); training_bar(SERVICE,TASKS)
-for k,v in {"OneDrive_files":["保存ルール.docx","研修集計.xlsx"],"OneDrive_share":"未作成","OneDrive_sync":"未同期","OneDrive_restore":""}.items(): st.session_state.setdefault(k,v)
-active=tabs(SERVICE,TABS); ribbon_start()
-if active=="ホーム":
-    name=st.text_input("ファイル名","説明資料.pptx")
-    if st.button("アップロード",use_container_width=True): st.session_state.OneDrive_files.append(name); complete_task(SERVICE,"upload")
-elif active=="共有":
-    scope=st.radio("リンク範囲",["指定したユーザー","組織内のユーザー","リンクを知っている全員"],horizontal=True)
-    if st.button("共有リンクを作成",use_container_width=True): st.session_state.OneDrive_share=scope; complete_task(SERVICE,"share")
-elif active=="同期":
-    if st.button("同期を開始",use_container_width=True): st.session_state.OneDrive_sync="最新"; complete_task(SERVICE,"sync")
-elif active=="履歴":
-    ver=st.selectbox("復元するバージョン",["1時間前","昨日 17:30","先週 月曜"])
-    if st.button("復元",use_container_width=True): st.session_state.OneDrive_restore=ver; complete_task(SERVICE,"restore")
-ribbon_end()
-items="".join(f"<div class='file-card'><strong>{f}</strong><div class='small'>共有：{st.session_state.OneDrive_share} ／ 同期：{st.session_state.OneDrive_sync}</div></div>" for f in st.session_state.OneDrive_files)
-st.markdown(f"<div class='office-shell'><div class='office-titlebar'>OneDrive</div><div class='office-canvas'>{items}<div class='small'>復元：{st.session_state.OneDrive_restore or '未実行'}</div></div></div>",unsafe_allow_html=True)
-if st.button("OneDriveの体験をリセット"): reset(SERVICE)
+from modules.common import init_page, training_banner, complete_step, safe
+init_page("OneDrive 体験")
+steps=["ファイルをアップロードしてください。","共有リンクの権限を選んで作成してください。","同期状態を確認してください。","版の履歴から復元してください。"]
+idx,done=training_banner("OneDrive",steps)
+st.session_state.setdefault('od_files',['保存ルール.docx','研修集計.xlsx'])
+st.session_state.setdefault('od_share','未作成')
+st.session_state.setdefault('od_sync','同期済み')
+st.markdown("<div class='m365-shell'><div class='m365-titlebar'><span>OneDrive</span><span>自分のファイル</span></div></div>", unsafe_allow_html=True)
+c1,c2,c3,c4=st.columns(4)
+with c1:
+    name=st.text_input('ファイル名','移行チェックリスト.docx')
+    if st.button('アップロード',type='primary'):
+        st.session_state.od_files.append(name); complete_step('OneDrive',0); st.rerun()
+with c2:
+    perm=st.selectbox('リンク権限',['指定したユーザー','組織内のユーザー','表示のみ'])
+    if st.button('リンク作成'):
+        st.session_state.od_share=perm; complete_step('OneDrive',1); st.rerun()
+with c3:
+    if st.button('同期を確認'):
+        st.session_state.od_sync='最新の状態'; complete_step('OneDrive',2); st.rerun()
+with c4:
+    if st.button('前の版を復元'):
+        complete_step('OneDrive',3); st.success('保存ルール.docx を前の版に復元しました。')
+st.markdown('<div class="workspace">',unsafe_allow_html=True)
+for f in st.session_state.od_files:
+    st.markdown(f"<div class='service-card'><h3>{safe(f)}</h3><p>共有：{safe(st.session_state.od_share)} / 同期：{safe(st.session_state.od_sync)}</p></div>",unsafe_allow_html=True)
+st.markdown('</div>',unsafe_allow_html=True)
+if st.button('トップへ戻る'): st.switch_page('app.py')

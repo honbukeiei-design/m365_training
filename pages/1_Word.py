@@ -1,114 +1,170 @@
-from __future__ import annotations
-import html
 import streamlit as st
-from modules.ui import load_css, top_bar, page_title, training_bar, complete_task, reset, tabs, ribbon_start, ribbon_end
+from modules.common import init_page, training_banner, complete_step, safe
 
-SERVICE = "Word"
-TASKS = [
-    {"id":"format","label":"ホームで書式を選択し、文書に反映してください。"},
-    {"id":"insert_table","label":"挿入で表の行列を選び、文書に挿入してください。"},
-    {"id":"layout","label":"レイアウトで余白を選び、ページに反映してください。"},
-    {"id":"design","label":"デザインで背景または罫線を選び、ページに反映してください。"},
-    {"id":"review","label":"校閲でコメントを入力し、文書に表示してください。"},
-    {"id":"view","label":"表示でズーム倍率を選び、表示に反映してください。"},
-    {"id":"merge","label":"差し込み文書で宛先を選び、差し込み表示してください。"},
+init_page("Word 体験")
+steps = [
+    "ホームで文字書式を選び、文書に反映してください。",
+    "挿入で表のサイズを選び、白紙ページに表を入れてください。",
+    "校閲でコメントを追加してください。",
+    "共有で共有範囲を選び、共有状態を反映してください。",
+    "保存先を選び、クラウド保存してください。",
 ]
-TABS = ["ホーム","挿入","レイアウト","デザイン","校閲","表示","差し込み文書"]
+step_idx, done = training_banner("Word", steps)
 
-st.set_page_config(page_title="Word 体験", layout="wide")
-load_css(); top_bar("Word")
-page_title("Word", "白紙ページに文書を作成し、リボン操作で書式・表・コメントを反映します。")
-training_bar(SERVICE, TASKS)
+st.session_state.setdefault("word_tab", "ホーム")
+st.session_state.setdefault("word_text", "M365移行後のファイル保存ルール\n旧Officeでは個人PCや共有フォルダーに保存していました。\nMicrosoft 365移行後は、OneDriveとSharePointを使い分け、Teamsから関係者へ共有します。")
+st.session_state.setdefault("word_bold", False)
+st.session_state.setdefault("word_underline", False)
+st.session_state.setdefault("word_bullets", False)
+st.session_state.setdefault("word_style", "標準")
+st.session_state.setdefault("word_table", None)
+st.session_state.setdefault("word_comment", "")
+st.session_state.setdefault("word_shared", "未共有")
+st.session_state.setdefault("word_saved", "未保存")
+st.session_state.setdefault("word_margin", "標準余白")
+st.session_state.setdefault("word_zoom", "100%")
+st.session_state.setdefault("word_bg", "白")
 
-defaults = {
-    "Word_text": "M365移行後のファイル保存ルール\n\n旧Officeでは個人PCや共有フォルダーに保存していました。\nMicrosoft 365移行後は、OneDriveとSharePointを使い分け、Teamsから関係者へ共有します。",
-    "Word_format": "標準", "Word_table_rows": 0, "Word_table_cols": 0, "Word_margin": "標準", "Word_design": "白紙",
-    "Word_comment": "", "Word_zoom": "100%", "Word_recipient": "", "Word_saved": False
-}
-for k, v in defaults.items(): st.session_state.setdefault(k, v)
-
-active = tabs(SERVICE, TABS)
-ribbon_start()
-if active == "ホーム":
-    c1, c2 = st.columns([2,1])
-    with c1:
-        choice = st.radio("書式", ["標準", "太字", "下線", "見出し", "箇条書き"], horizontal=True)
-    with c2:
-        if st.button("書式を適用", use_container_width=True):
-            st.session_state.Word_format = choice
-            st.session_state.Word_saved = False
-            complete_task(SERVICE, "format")
-elif active == "挿入":
-    c1, c2, c3 = st.columns([1,1,1])
-    rows = c1.selectbox("行", [2,3,4,5])
-    cols = c2.selectbox("列", [2,3,4])
-    if c3.button("表を挿入", use_container_width=True):
-        st.session_state.Word_table_rows = rows
-        st.session_state.Word_table_cols = cols
-        st.session_state.Word_saved = False
-        complete_task(SERVICE, "insert_table")
-elif active == "レイアウト":
-    choice = st.radio("余白", ["標準", "狭い", "広い"], horizontal=True)
-    if st.button("余白を適用", use_container_width=True):
-        st.session_state.Word_margin = choice
-        st.session_state.Word_saved = False
-        complete_task(SERVICE, "layout")
-elif active == "デザイン":
-    choice = st.radio("ページデザイン", ["白紙", "淡い背景", "グリッド", "青い罫線"], horizontal=True)
-    if st.button("デザインを適用", use_container_width=True):
-        st.session_state.Word_design = choice
-        st.session_state.Word_saved = False
-        complete_task(SERVICE, "design")
-elif active == "校閲":
-    comment = st.text_input("コメント", "保存先は用途に応じてOneDriveとSharePointを使い分けましょう。")
-    if st.button("コメントを追加", use_container_width=True):
-        st.session_state.Word_comment = comment
-        st.session_state.Word_saved = False
-        complete_task(SERVICE, "review")
-elif active == "表示":
-    zoom = st.radio("ズーム", ["80%", "100%", "120%"], horizontal=True)
-    if st.button("ズームを適用", use_container_width=True):
-        st.session_state.Word_zoom = zoom
-        complete_task(SERVICE, "view")
-elif active == "差し込み文書":
-    rec = st.selectbox("宛先", ["総務部", "経営企画課", "情報システム担当", "全職員"])
-    if st.button("差し込み結果を表示", use_container_width=True):
-        st.session_state.Word_recipient = rec
-        st.session_state.Word_saved = False
-        complete_task(SERVICE, "merge")
-ribbon_end()
-
-c1, c2, c3 = st.columns([1,1,4])
-if c1.button("保存", use_container_width=True):
-    st.session_state.Word_saved = True
-if c2.button("リセット", use_container_width=True):
-    reset(SERVICE)
-c3.caption("保存状態：" + ("保存済み" if st.session_state.Word_saved else "未保存の変更"))
-
-# Input styled as a page; rendered document below uses the same page surface to avoid raw HTML/code display.
-text = st.text_area("白紙ページ", key="Word_text", height=170, label_visibility="collapsed")
-raw = html.escape(text)
-if st.session_state.Word_format == "箇条書き":
-    raw = "\n".join([("• " + html.escape(line)) if line.strip() else "" for line in text.splitlines()])
-fmt = {"太字":"bold", "下線":"underline", "見出し":"heading"}.get(st.session_state.Word_format, "")
-margin = {"狭い":"narrow", "広い":"wide"}.get(st.session_state.Word_margin, "")
-design = {"淡い背景":"blue", "グリッド":"grid", "青い罫線":"border-blue"}.get(st.session_state.Word_design, "")
-zoom = {"80%":"0.8", "100%":"1", "120%":"1.2"}[st.session_state.Word_zoom]
-table_html = ""
-if st.session_state.Word_table_rows and st.session_state.Word_table_cols:
-    r, c = st.session_state.Word_table_rows, st.session_state.Word_table_cols
-    table_html = "<table class='insert-table'>" + "".join("<tr>" + "".join(f"<td>項目 {i+1}-{j+1}</td>" for j in range(c)) + "</tr>" for i in range(r)) + "</table>"
-comment = f"<div class='comment'>コメント：{html.escape(st.session_state.Word_comment)}</div>" if st.session_state.Word_comment else ""
-merge = f"<p><span class='badge'>{html.escape(st.session_state.Word_recipient)} 各位</span></p>" if st.session_state.Word_recipient else ""
-st.markdown(f"""
-<div class='office-shell'>
-  <div class='office-titlebar'><span>Word</span><span class='file'>保存ルール.docx</span></div>
-  <div class='office-ribbon-strip'>ファイル　ホーム　挿入　レイアウト　デザイン　校閲　表示　差し込み文書</div>
-  <div class='office-canvas'>
-    <div style='transform:scale({zoom});transform-origin:top center;margin-bottom:70px;'>
-      <div class='word-paper {fmt} {margin} {design}'>{merge}<div>{raw}</div>{table_html}{comment}</div>
-    </div>
-  </div>
-  <div class='statusbar'><span>ページ 1/1</span><span>表示 {html.escape(st.session_state.Word_zoom)} ・ {html.escape(st.session_state.Word_margin)}余白 ・ {html.escape(st.session_state.Word_format)}</span></div>
+st.markdown("""
+<div class='m365-shell'>
+  <div class='m365-titlebar'><span>Word</span><span class='file'>保存ルール.docx</span></div>
 </div>
 """, unsafe_allow_html=True)
+
+tabs = ["ファイル", "ホーム", "挿入", "レイアウト", "デザイン", "校閲", "表示", "差し込み文書"]
+cols = st.columns(len(tabs))
+for col, t in zip(cols, tabs):
+    with col:
+        if st.button(t, key=f"word_tab_{t}", type="primary" if st.session_state.word_tab == t else "secondary", use_container_width=True):
+            st.session_state.word_tab = t
+            st.rerun()
+
+st.markdown("<div class='m365-ribbon'>", unsafe_allow_html=True)
+tab = st.session_state.word_tab
+if tab == "ホーム":
+    c1, c2, c3, c4 = st.columns([1,1,1,2])
+    with c1:
+        bold = st.checkbox("太字", value=st.session_state.word_bold)
+    with c2:
+        underline = st.checkbox("下線", value=st.session_state.word_underline)
+    with c3:
+        bullets = st.checkbox("箇条書き", value=st.session_state.word_bullets)
+    with c4:
+        style = st.selectbox("スタイル", ["標準", "見出し", "報告書", "メモ"], index=["標準","見出し","報告書","メモ"].index(st.session_state.word_style))
+    if st.button("文書に適用", type="primary"):
+        st.session_state.word_bold = bold
+        st.session_state.word_underline = underline
+        st.session_state.word_bullets = bullets
+        st.session_state.word_style = style
+        complete_step("Word", 0)
+        st.rerun()
+elif tab == "挿入":
+    c1, c2, c3 = st.columns([1,1,2])
+    with c1:
+        rows = st.number_input("行", min_value=2, max_value=6, value=3)
+    with c2:
+        cols_n = st.number_input("列", min_value=2, max_value=5, value=3)
+    with c3:
+        st.caption("表サイズを選び、挿入すると文書下部に反映されます。")
+    if st.button("表を挿入", type="primary"):
+        st.session_state.word_table = (int(rows), int(cols_n))
+        complete_step("Word", 1)
+        st.rerun()
+elif tab == "レイアウト":
+    c1, c2 = st.columns(2)
+    with c1:
+        margin = st.radio("余白", ["標準余白", "狭い余白", "広い余白"], horizontal=True)
+    with c2:
+        orientation = st.radio("印刷の向き", ["縦", "横"], horizontal=True)
+    if st.button("レイアウトを反映", type="primary"):
+        st.session_state.word_margin = margin
+        st.session_state.word_orientation = orientation
+        st.rerun()
+elif tab == "デザイン":
+    c1, c2 = st.columns(2)
+    with c1:
+        bg = st.radio("ページ背景", ["白", "薄い青", "薄い黄"], horizontal=True)
+    with c2:
+        border = st.checkbox("ページ罫線を表示", value=st.session_state.get("word_border", False))
+    if st.button("デザインを反映", type="primary"):
+        st.session_state.word_bg = bg
+        st.session_state.word_border = border
+        st.rerun()
+elif tab == "校閲":
+    comment = st.text_input("コメント", value=st.session_state.word_comment or "保存先のルールを全員で統一しましょう。")
+    if st.button("コメントを追加", type="primary"):
+        st.session_state.word_comment = comment
+        complete_step("Word", 2)
+        st.rerun()
+elif tab == "表示":
+    zoom = st.radio("ズーム", ["80%", "100%", "120%"], horizontal=True, index=["80%","100%","120%"].index(st.session_state.word_zoom))
+    if st.button("表示倍率を変更", type="primary"):
+        st.session_state.word_zoom = zoom
+        st.rerun()
+elif tab == "差し込み文書":
+    field = st.selectbox("差し込みフィールド", ["{氏名}", "{部署}", "{日付}"])
+    if st.button("本文に差し込みフィールドを挿入", type="primary"):
+        st.session_state.word_text += f"\n{field} 様"
+        st.rerun()
+else:
+    c1, c2 = st.columns(2)
+    with c1:
+        place = st.selectbox("保存先", ["OneDrive - 個人", "SharePoint - 部署サイト", "Teams - チーム"])
+        if st.button("クラウドに保存", type="primary"):
+            st.session_state.word_saved = f"保存済み：{place}"
+            complete_step("Word", 4)
+            st.rerun()
+    with c2:
+        share_to = st.selectbox("共有範囲", ["指定したユーザー", "組織内のリンク", "自分のみ"])
+        if st.button("共有を反映", type="primary"):
+            st.session_state.word_shared = share_to
+            complete_step("Word", 3)
+            st.rerun()
+st.markdown("</div>", unsafe_allow_html=True)
+
+# document editing surface
+bg = {"白":"#ffffff", "薄い青":"#f5f9ff", "薄い黄":"#fffdf0"}[st.session_state.word_bg]
+border_style = "2px solid #185abd" if st.session_state.get("word_border", False) else "1px solid #d9dee8"
+page_class = "word-page compact" if st.session_state.word_margin == "狭い余白" else "word-page"
+text_class = "word-preview"
+if st.session_state.word_bold: text_class += " bold"
+if st.session_state.word_underline: text_class += " underline"
+if st.session_state.word_bullets: text_class += " bullets"
+if st.session_state.word_style == "報告書": text_class += " report"
+if st.session_state.word_style == "メモ": text_class += " memo"
+zoom = st.session_state.word_zoom
+
+st.markdown("<div class='workspace'>", unsafe_allow_html=True)
+st.session_state.word_text = st.text_area("白紙ページに直接入力", value=st.session_state.word_text, height=170, label_visibility="collapsed")
+lines = [safe(x) for x in st.session_state.word_text.splitlines()]
+if st.session_state.word_bullets:
+    body = "".join(f"<div>{line}</div>" for line in lines if line.strip())
+else:
+    title = lines[0] if lines else ""
+    rest = "<br>".join(lines[1:]) if len(lines) > 1 else ""
+    if st.session_state.word_style in ["報告書", "メモ", "見出し"]:
+        body = f"<h2>{title}</h2><div>{rest}</div>"
+    else:
+        body = "<br>".join(lines)
+
+table_html = ""
+if st.session_state.word_table:
+    r, c = st.session_state.word_table
+    rows_html = []
+    for i in range(r):
+        cells = "".join(f"<td>{'見出し' if i==0 else '項目'} {j+1}</td>" for j in range(c))
+        rows_html.append(f"<tr>{cells}</tr>")
+    table_html = "<table class='word-table'>" + "".join(rows_html) + "</table>"
+comment_html = f"<div class='word-comment'>コメント：{safe(st.session_state.word_comment)}</div>" if st.session_state.word_comment else ""
+st.markdown(f"""
+<div class='{page_class}' style='background:{bg};border:{border_style};transform:scale({int(zoom.strip('%'))/100});transform-origin:top center;'>
+  <div class='{text_class}'>{body}</div>
+  {table_html}
+  {comment_html}
+</div>
+""", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='statusbar'><span>ページ 1/1</span><span>{st.session_state.word_saved} ・ 共有状態：{st.session_state.word_shared} ・ 表示 {st.session_state.word_zoom}</span></div>", unsafe_allow_html=True)
+
+if st.button("トップへ戻る"):
+    st.switch_page("app.py")

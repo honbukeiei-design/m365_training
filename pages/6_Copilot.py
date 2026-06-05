@@ -1,20 +1,20 @@
 import streamlit as st
-from modules.ui import load_css, top_bar, page_title, training_bar, complete_task, reset, tabs, ribbon_start, ribbon_end
-SERVICE="Copilot"
-TASKS=[{"id":"prompt","label":"依頼文を入力し、提案を生成してください。"},{"id":"summary","label":"要約を生成してください。"},{"id":"next","label":"次の操作提案を確認してください。"}]
-TABS=["チャット","要約","作成","次の操作"]
-st.set_page_config(page_title="Copilot 体験",layout="wide"); load_css(); top_bar("Copilot"); page_title("Copilot","依頼文、要約、文章作成、次の操作提案を体験します。あくまで研修用の模擬応答です。"); training_bar(SERVICE,TASKS)
-st.session_state.setdefault("Copilot_result","")
-active=tabs(SERVICE,TABS); ribbon_start()
-if active=="チャット":
-    prompt=st.text_area("依頼文","M365移行後のファイル保存ルールを短く説明してください。")
-    if st.button("生成",use_container_width=True): st.session_state.Copilot_result="OneDriveは個人作業、SharePointはチーム共有、Teamsは会話と会議の入口として使い分けます。"; complete_task(SERVICE,"prompt")
-elif active=="要約":
-    if st.button("要約を生成",use_container_width=True): st.session_state.Copilot_result="要約：保存場所を統一し、共有はリンクで管理し、Teamsから関係者へ案内します。"; complete_task(SERVICE,"summary")
-elif active=="作成":
-    if st.button("案内文を作成",use_container_width=True): st.session_state.Copilot_result="案内文：本日よりM365の保存・共有ルールに基づき、ファイルはOneDriveまたはSharePointに保存してください。"
-elif active=="次の操作":
-    if st.button("次の操作を提案",use_container_width=True): st.session_state.Copilot_result="次の操作：1. 文書をOneDriveに保存 2. 共有範囲を指定 3. Teamsで関係者に通知"; complete_task(SERVICE,"next")
-ribbon_end()
-st.markdown(f"<div class='office-shell'><div class='office-titlebar'>Copilot</div><div class='office-canvas'><div class='file-card'>{st.session_state.Copilot_result or 'ここに結果が表示されます。'}</div></div></div>",unsafe_allow_html=True)
-if st.button("Copilotの体験をリセット"): reset(SERVICE)
+from modules.common import init_page, training_banner, complete_step, safe
+init_page("Copilot 体験")
+steps=["目的が伝わる依頼文を入力してください。","生成結果を確認してください。","次の操作提案を選んでください。"]
+idx,done=training_banner('Copilot',steps)
+st.session_state.setdefault('cp_prompt','Teams投稿用に、M365移行後の保存ルールを短く説明してください。')
+st.session_state.setdefault('cp_result','')
+st.session_state.setdefault('cp_next','未選択')
+st.markdown("<div class='m365-shell'><div class='m365-titlebar'><span>Copilot</span><span>業務支援</span></div></div>", unsafe_allow_html=True)
+prompt=st.text_area('依頼文',value=st.session_state.cp_prompt,height=120)
+if st.button('生成',type='primary'):
+    st.session_state.cp_prompt=prompt
+    st.session_state.cp_result='M365移行後は、個人作業はOneDrive、部署共有はSharePoint、会議やチャットでの共有はTeamsを使い分けましょう。ファイルはクラウドに保存すると、共同編集や版管理がしやすくなります。'
+    complete_step('Copilot',0); complete_step('Copilot',1); st.rerun()
+if st.session_state.cp_result:
+    st.markdown(f"<div class='word-page compact'><strong>Copilotの回答</strong><br><br>{safe(st.session_state.cp_result)}</div>",unsafe_allow_html=True)
+    next_action=st.selectbox('次の操作',['Teams投稿に整える','箇条書きにする','管理者向け説明にする'])
+    if st.button('次の操作を選択'):
+        st.session_state.cp_next=next_action; complete_step('Copilot',2); st.rerun()
+if st.button('トップへ戻る'): st.switch_page('app.py')

@@ -1,24 +1,35 @@
 import streamlit as st
-from modules.ui import load_css, top_bar, page_title, training_bar, complete_task, reset, tabs, ribbon_start, ribbon_end
-SERVICE="SharePoint"
-TASKS=[{"id":"site","label":"サイトを選択してください。"},{"id":"doc","label":"ドキュメントライブラリにファイルを追加してください。"},{"id":"permission","label":"権限を設定してください。"},{"id":"news","label":"ニュースを投稿してください。"}]
-TABS=["サイト","ドキュメント","権限","ニュース"]
-st.set_page_config(page_title="SharePoint 体験",layout="wide"); load_css(); top_bar("SharePoint"); page_title("SharePoint","チームサイト、文書管理、権限、ニュース投稿を体験します。"); training_bar(SERVICE,TASKS)
-for k,v in {"SharePoint_site":"未選択","SharePoint_docs":["運用ルール.docx"],"SharePoint_perm":"閲覧のみ","SharePoint_news":""}.items(): st.session_state.setdefault(k,v)
-active=tabs(SERVICE,TABS); ribbon_start()
-if active=="サイト":
-    site=st.selectbox("サイト",["経営企画","情報システム","総務"])
-    if st.button("サイトを開く",use_container_width=True): st.session_state.SharePoint_site=site; complete_task(SERVICE,"site")
-elif active=="ドキュメント":
-    doc=st.text_input("追加ファイル","会議資料.docx")
-    if st.button("ライブラリに追加",use_container_width=True): st.session_state.SharePoint_docs.append(doc); complete_task(SERVICE,"doc")
-elif active=="権限":
-    perm=st.radio("権限",["閲覧のみ","編集可","所有者"],horizontal=True)
-    if st.button("権限を適用",use_container_width=True): st.session_state.SharePoint_perm=perm; complete_task(SERVICE,"permission")
-elif active=="ニュース":
-    news=st.text_input("ニュースタイトル","M365移行研修を開始します")
-    if st.button("投稿",use_container_width=True): st.session_state.SharePoint_news=news; complete_task(SERVICE,"news")
-ribbon_end()
-docs="".join(f"<div class='file-card'>{d}</div>" for d in st.session_state.SharePoint_docs)
-st.markdown(f"<div class='office-shell'><div class='office-titlebar'>SharePoint - {st.session_state.SharePoint_site}</div><div class='office-canvas'><div class='site-card'>権限：{st.session_state.SharePoint_perm}</div>{docs}<div class='site-card'>ニュース：{st.session_state.SharePoint_news or '未投稿'}</div></div></div>",unsafe_allow_html=True)
-if st.button("SharePointの体験をリセット"): reset(SERVICE)
+from modules.common import init_page, training_banner, complete_step, safe
+init_page("SharePoint 体験")
+steps=["サイトを選択してください。","ドキュメントライブラリにファイルを追加してください。","権限を選んで反映してください。","ニュース投稿を作成してください。"]
+idx,done=training_banner('SharePoint',steps)
+st.session_state.setdefault('sp_site','総務サイト')
+st.session_state.setdefault('sp_docs',['規程集.docx','移行計画.xlsx'])
+st.session_state.setdefault('sp_perm','閲覧')
+st.session_state.setdefault('sp_news','')
+st.markdown("<div class='m365-shell'><div class='m365-titlebar'><span>SharePoint</span><span>チームサイト</span></div></div>", unsafe_allow_html=True)
+c1,c2,c3,c4=st.columns(4)
+with c1:
+    site=st.selectbox('サイト',['総務サイト','経営企画サイト','情報システムサイト'])
+    if st.button('サイトを開く'):
+        st.session_state.sp_site=site; complete_step('SharePoint',0); st.rerun()
+with c2:
+    doc=st.text_input('追加ファイル','議事録.docx')
+    if st.button('追加'):
+        st.session_state.sp_docs.append(doc); complete_step('SharePoint',1); st.rerun()
+with c3:
+    perm=st.selectbox('権限',['閲覧','編集','所有者'])
+    if st.button('権限を反映'):
+        st.session_state.sp_perm=perm; complete_step('SharePoint',2); st.rerun()
+with c4:
+    news=st.text_input('ニュースタイトル','M365研修を開始します')
+    if st.button('投稿'):
+        st.session_state.sp_news=news; complete_step('SharePoint',3); st.rerun()
+st.markdown('<div class="workspace">',unsafe_allow_html=True)
+st.subheader(st.session_state.sp_site)
+st.caption(f"権限：{st.session_state.sp_perm}")
+for d in st.session_state.sp_docs:
+    st.markdown(f"<div class='message'>{safe(d)}</div>",unsafe_allow_html=True)
+if st.session_state.sp_news: st.info('ニュース：'+st.session_state.sp_news)
+st.markdown('</div>',unsafe_allow_html=True)
+if st.button('トップへ戻る'): st.switch_page('app.py')
