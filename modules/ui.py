@@ -44,18 +44,25 @@ def close_shell() -> None:
 
 
 def service_launcher(current: str | None = None) -> None:
-    cards = []
-    for name, svc in SERVICES.items():
-        current_badge = "<span class='badge'>表示中</span>" if current == name else ""
-        cards.append(
-            f"""
-            <div class='service-card'>
-              <h3>{svc['icon']} {html.escape(name)} {current_badge}</h3>
-              <a href='{html.escape(svc['url'])}' target='_blank' rel='noopener'>実サービスを開く</a>
-            </div>
-            """
-        )
-    st.markdown("<div class='service-grid'>" + "".join(cards) + "</div>", unsafe_allow_html=True)
+    """Render service launch buttons with native Streamlit widgets.
+
+    Earlier builds used a single large HTML string. On Streamlit Cloud that could be
+    displayed as literal HTML if escaping/markdown parsing changed. Native widgets
+    prevent that failure mode and keep links clickable.
+    """
+    st.markdown("##### 実サービスを開く")
+    cols = st.columns(6)
+    for col, (name, svc) in zip(cols, SERVICES.items()):
+        with col:
+            with st.container(border=True):
+                label = f"{svc['icon']} {name}"
+                if current == name:
+                    st.markdown(f"**{label}**  ")
+                    st.caption("表示中")
+                else:
+                    st.markdown(f"**{label}**")
+                    st.caption(svc.get("description", ""))
+                st.link_button("実サービスを開く", svc["url"], use_container_width=True)
 
 
 def training_strip(service: str, tasks: list[dict]) -> None:
@@ -69,15 +76,8 @@ def training_strip(service: str, tasks: list[dict]) -> None:
     complete_count = len(set(st.session_state[done_key]))
     if complete_count >= len(tasks):
         svc = SERVICES[service]
-        st.markdown(
-            f"""
-            <div class='complete-box'>
-              <strong>体験完了：</strong>ここまでの操作を実サービスでも確認してみましょう。<br>
-              <a class='training-link' href='{html.escape(svc['url'])}' target='_blank' rel='noopener'>実体験をしてください：{html.escape(service)} を開く</a>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.success("体験完了です。実サービスでも同じ操作を確認してみましょう。")
+        st.link_button(f"実体験をしてください：{service} を開く", svc["url"], use_container_width=True)
         return
     task = tasks[idx]
     st.markdown(
@@ -115,7 +115,8 @@ def ribbon_tabs(service: str, tabs: list[str], default: str = "ホーム") -> st
         st.session_state[key] = default
     cols = st.columns(len(tabs))
     for col, tab in zip(cols, tabs):
-        if col.button(tab, key=f"{service}_tab_{tab}", use_container_width=True):
+        btn_label = f"● {tab}" if st.session_state[key] == tab else tab
+        if col.button(btn_label, key=f"{service}_tab_{tab}", use_container_width=True):
             st.session_state[key] = tab
             st.rerun()
     active = st.session_state[key]

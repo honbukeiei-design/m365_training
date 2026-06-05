@@ -40,20 +40,17 @@ st.markdown("<div class='ribbon'>", unsafe_allow_html=True)
 
 if active == "ホーム":
     st.markdown("#### 文字書式")
-    c1, c2, c3, c4 = st.columns([1,1,1,1])
-    with c1:
-        if st.button("太字", use_container_width=True):
-            st.session_state.Word_format = "太字"; st.session_state.Word_saved = False; mark_task_done(SERVICE, "home_format")
-    with c2:
-        if st.button("下線", use_container_width=True):
-            st.session_state.Word_format = "下線"; st.session_state.Word_saved = False; mark_task_done(SERVICE, "home_format")
-    with c3:
-        if st.button("見出しスタイル", use_container_width=True):
-            st.session_state.Word_format = "見出し"; st.session_state.Word_saved = False; mark_task_done(SERVICE, "home_format")
-    with c4:
-        if st.button("箇条書き", use_container_width=True):
-            st.session_state.Word_bullets = not st.session_state.Word_bullets; st.session_state.Word_saved = False; mark_task_done(SERVICE, "home_format")
-    st.caption("ボタンを押すと、文書全体に書式が反映されます。")
+    fmt_choice = st.radio("適用する書式", ["標準", "太字", "下線", "見出し", "箇条書き"], horizontal=True, key="Word_format_choice")
+    if st.button("選択した書式を文書に適用", use_container_width=True):
+        if fmt_choice == "箇条書き":
+            st.session_state.Word_bullets = True
+            st.session_state.Word_format = "標準"
+        else:
+            st.session_state.Word_bullets = False
+            st.session_state.Word_format = fmt_choice
+        st.session_state.Word_saved = False
+        mark_task_done(SERVICE, "home_format")
+    st.caption("機能ボタンで書式を選び、適用すると白紙ページへ反映されます。")
 elif active == "挿入":
     st.markdown("#### 挿入")
     size = st.selectbox("表のサイズ", ["2列×2行", "3列×3行", "4列×3行"], key="Word_table_choice")
